@@ -2,12 +2,13 @@
 "use client";
 
 import { useState, useCallback, useRef, DragEvent as ReactDragEvent } from 'react';
-import { UploadCloud, Loader2, Download, X, FileText, Combine } from 'lucide-react';
+import { UploadCloud, Loader2, Download, X, Combine } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { PDFDocument } from 'pdf-lib';
+import PagePreview from './page-preview';
 
 interface PageItem {
   id: string;
@@ -45,11 +46,13 @@ export default function PdfMerger() {
   const loadPdfPages = async (file: File): Promise<PageItem[]> => {
     try {
       const arrayBuffer = await file.arrayBuffer();
+      // Use ignoreEncryption: true to handle some protected files, though fully encrypted ones will still fail
       const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
       const pageCount = pdfDoc.getPageCount();
       const id = `${file.name}-${file.lastModified}-${file.size}`;
       
       const newPdfFileItem = { id, file };
+      // Use a functional update to correctly access the previous state
       setPdfFiles(prev => new Map(prev).set(id, newPdfFileItem));
 
       return Array.from({ length: pageCount }, (_, i) => ({
@@ -69,7 +72,7 @@ export default function PdfMerger() {
     if (!files || files.length === 0) return;
     setIsLoading(true);
 
-    const newPages: PageItem[] = [];
+    const newPagesPromises: Promise<PageItem[]>[] = [];
     for (const file of Array.from(files)) {
       if (file.type !== 'application/pdf') {
         toast({
@@ -79,25 +82,27 @@ export default function PdfMerger() {
         });
         continue;
       }
-      const loadedPages = await loadPdfPages(file);
-      newPages.push(...loadedPages);
+      newPagesPromises.push(loadPdfPages(file));
     }
     
-    setPages(prev => [...prev, ...newPages]);
+    const newPagesArrays = await Promise.all(newPagesPromises);
+    const flattenedNewPages = newPagesArrays.flat();
+    
+    setPages(prev => [...prev, ...flattenedNewPages]);
     setIsLoading(false);
-  }, [toast]);
+  }, [toast]); // loadPdfPages is not a dependency as it's defined outside and doesn't change
   
   const removePage = (id: string) => {
     setPages(prev => {
+        const pageToRemove = prev.find(p => p.id === id);
         const newPages = prev.filter(p => p.id !== id);
-        // Clean up pdfFile from map if no pages are left from it
-        const removedPage = prev.find(p => p.id === id);
-        if (removedPage) {
-            const isPdfStillInUse = newPages.some(p => p.pdfId === removedPage.pdfId);
+
+        if (pageToRemove) {
+            const isPdfStillInUse = newPages.some(p => p.pdfId === pageToRemove.pdfId);
             if (!isPdfStillInUse) {
                 setPdfFiles(prevFiles => {
                     const newFiles = new Map(prevFiles);
-                    newFiles.delete(removedPage.pdfId);
+                    newFiles.delete(pageToRemove.pdfId);
                     return newFiles;
                 });
             }
@@ -115,8 +120,6 @@ export default function PdfMerger() {
     
     try {
       const newPdf = await PDFDocument.create();
-      
-      // Keep track of loaded source pdfs to avoid reloading
       const loadedPdfs = new Map<string, PDFDocument>();
 
       for (const page of pages) {
@@ -174,7 +177,7 @@ export default function PdfMerger() {
     dragOverItemRef.current = null;
   };
   
-  const handleDragOver = (e: ReactDragEvent) => e.preventDefault(); // Necessary for onDrop to fire
+  const handleDragOver = (e: ReactDragEvent) => e.preventDefault();
 
   const handleGlobalDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); if (e.type === "dragenter" || e.type === "dragover") setIsDragActive(true); else if (e.type === "dragleave") setIsDragActive(false); };
   const handleDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); if (e.dataTransfer.files) handleFileChange(e.dataTransfer.files); };
@@ -215,34 +218,37 @@ export default function PdfMerger() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4" onDragOver={handleDragOver}>
-                  {pages.map((page, index) => (
-                    <div 
-                      key={page.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, index)}
-                      onDragEnter={(e) => handleDragEnter(e, index)}
-                      onDragEnd={handleDragEnd}
-                      className="relative group aspect-[3/4] cursor-grab"
-                    >
-                      <div className="flex flex-col items-center justify-center h-full w-full rounded-md border bg-secondary p-2">
-                        <FileText className="h-8 w-8 text-muted-foreground" />
-                        <p className="mt-2 text-lg font-bold text-foreground">
-                          {page.originalPageIndex + 1}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate w-full text-center px-1" title={page.pdfName}>{page.pdfName}</p>
+                  {pages.map((page, index) => {
+                    const pdfFile = pdfFiles.get(page.pdfId)?.file;
+                    return (
+                      <div 
+                        key={page.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragEnter={(e) => handleDragEnter(e, index)}
+                        onDragEnd={handleDragEnd}
+                        className="relative group aspect-[3/4] cursor-grab bg-background rounded-md border"
+                      >
+                        <div className="absolute inset-0 z-0">
+                          {pdfFile && (
+                            <PagePreview file={pdfFile} pageNumber={page.originalPageIndex + 1} />
+                          )}
+                        </div>
+                        <div className="absolute inset-0 z-10 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            onClick={() => removePage(page.id)}
+                            aria-label={`Remove page ${page.originalPageIndex + 1}`}
+                          >
+                            <X className="h-5 w-5"/>
+                          </Button>
+                        </div>
+                         <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-md">
+                           <p className="text-xs text-white truncate w-full text-center" title={page.pdfName}>{page.pdfName} - {page.originalPageIndex + 1}</p>
+                         </div>
                       </div>
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          onClick={() => removePage(page.id)}
-                          aria-label={`Remove page ${page.originalPageIndex + 1}`}
-                        >
-                          <X className="h-5 w-5"/>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                  )})}
                   <Card 
                     onClick={onBrowseClick}
                     onDragEnter={handleGlobalDrag} onDragLeave={handleGlobalDrag} onDragOver={handleGlobalDrag} onDrop={handleDrop}
