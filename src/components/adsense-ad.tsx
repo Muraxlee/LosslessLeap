@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 declare global {
     interface Window {
@@ -14,17 +14,24 @@ interface AdSenseAdProps {
 }
 
 const AdSenseAd: React.FC<AdSenseAdProps> = ({ slot }) => {
+    const insRef = useRef<HTMLModElement>(null);
+
     useEffect(() => {
+        // Prevent script from running twice on the same ad slot
+        if (insRef.current && insRef.current.children.length > 0) {
+            return;
+        }
+
         try {
             (window.adsbygoogle = window.adsbygoogle || []).push({});
         } catch (err) {
             console.error(err);
         }
-    }, []);
+    }, [slot]); // Re-run effect if slot changes
 
     if (process.env.NODE_ENV !== 'production') {
         return (
-            <div className="w-full text-center bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-muted-foreground text-sm">
+            <div className="w-full h-full text-center bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-muted-foreground text-sm">
                 Advertisement
             </div>
         );
@@ -32,6 +39,7 @@ const AdSenseAd: React.FC<AdSenseAdProps> = ({ slot }) => {
     
     return (
         <ins
+            ref={insRef}
             className="adsbygoogle"
             style={{ display: 'block' }}
             data-ad-client="ca-pub-3673219463234072"
