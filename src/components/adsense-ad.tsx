@@ -14,17 +14,19 @@ interface AdSenseAdProps {
 }
 
 const AdSenseAd: React.FC<AdSenseAdProps> = ({ slot }) => {
-    const adRef = useRef<HTMLModElement>(null);
-
     useEffect(() => {
         try {
-            // Check if the ad has already been loaded
-            if (adRef.current && adRef.current.getAttribute('data-ad-status') === 'filled') {
-                return;
-            }
             (window.adsbygoogle = window.adsbygoogle || []).push({});
         } catch (err) {
-            console.error('AdSense error:', err);
+            if (err instanceof Error) {
+                // AdSense throws a "TagError" if an ad is pushed to a slot that already has an ad.
+                // This is common in dev mode with Next.js hot-reloading. We can safely ignore it.
+                if (!err.message.includes('TagError')) {
+                   console.error('AdSense error:', err);
+                }
+            } else {
+                console.error('AdSense error:', err);
+            }
         }
     }, [slot]); // Re-run if the slot changes, which is rare but good practice
 
@@ -38,7 +40,6 @@ const AdSenseAd: React.FC<AdSenseAdProps> = ({ slot }) => {
     
     return (
         <ins
-            ref={adRef}
             className="adsbygoogle"
             style={{ display: 'block' }}
             data-ad-client="ca-pub-3673219463234072"
