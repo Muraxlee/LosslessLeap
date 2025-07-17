@@ -71,7 +71,7 @@ export default function ImageCompressor() {
     const newItems: ImageQueueItem[] = [];
 
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
         toast({
           variant: "destructive",
           title: "Invalid file type",
@@ -134,7 +134,6 @@ export default function ImageCompressor() {
       if (!ctx) throw new Error("Could not get canvas context");
       ctx.drawImage(img, 0, 0);
   
-      // Use WebP for better compression and transparency support. Fallback to Jpeg for other types.
       const mimeType = 'image/webp';
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(resolve, mimeType, compressionQuality / 100);
@@ -172,11 +171,11 @@ export default function ImageCompressor() {
   
   useEffect(() => {
     const hasQueue = imageQueue.length > 0 && imageQueue.some(i => i.status === 'queued');
-    if (hasQueue) {
+    if (hasQueue && !isProcessingQueue) {
       const timer = setTimeout(processQueue, 300);
       return () => clearTimeout(timer);
     }
-  }, [imageQueue, processQueue]);
+  }, [imageQueue, processQueue, isProcessingQueue]);
 
   const handleQualityChange = (newQuality: number) => {
     setQuality(newQuality);
@@ -346,5 +345,3 @@ export default function ImageCompressor() {
     </div>
   );
 }
-
-  
