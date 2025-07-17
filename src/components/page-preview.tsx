@@ -4,6 +4,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import { Skeleton } from './ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface PagePreviewProps {
   file: File;
@@ -11,7 +12,6 @@ interface PagePreviewProps {
 }
 
 // Set workerSrc once when the module loads
-// Note: This path might need to be adjusted based on your project's public folder structure
 if (typeof window !== 'undefined') {
   GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 }
@@ -22,13 +22,21 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const renderPage = async () => {
       setIsLoading(true);
       setError(null);
       try {
         const arrayBuffer = await file.arrayBuffer();
+        // Using a unique document loading task for each preview to avoid conflicts
         const loadingTask = getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
+
+        if (!isMounted) {
+          loadingTask.destroy();
+          return;
+        }
+
         const page = await pdf.getPage(pageNumber);
         
         const canvas = canvasRef.current;
@@ -49,17 +57,16 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
         await page.render(renderContext).promise;
       } catch (err) {
         console.error(`Failed to render page ${pageNumber} of ${file.name}`, err);
-        setError('Preview failed');
+        if(isMounted) setError('Preview failed');
       } finally {
-        setIsLoading(false);
+        if(isMounted) setIsLoading(false);
       }
     };
 
     renderPage();
 
-    // Clean up function to prevent memory leaks with PDF.js
     return () => {
-      // You can add cleanup logic here if needed, for instance, destroying the worker
+      isMounted = false;
     };
   }, [file, pageNumber]);
 
@@ -71,9 +78,5 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
     </div>
   );
 };
-
-// Helper function to use with cn
-const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
-
 
 export default PagePreview;
