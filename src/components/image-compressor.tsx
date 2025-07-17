@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { UploadCloud, Loader2, Download, X, Sparkles, CheckCircle2, XCircle, PackageCheck } from 'lucide-react';
+import { UploadCloud, Loader2, Download, X, Sparkles, PackageCheck, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -36,6 +36,9 @@ export default function ImageCompressor() {
   const [isDragActive, setIsDragActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const queueRef = useRef<ImageQueueItem[]>([]);
+  queueRef.current = imageQueue;
+
   const { toast } = useToast();
 
   const formatBytes = (bytes: number, decimals = 2) => {
@@ -48,6 +51,10 @@ export default function ImageCompressor() {
   };
   
   const handleReset = useCallback(() => {
+    // Revoke all existing object URLs before clearing the queue
+    queueRef.current.forEach(item => {
+      if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
+    });
     setImageQueue([]);
     setIsProcessingQueue(false);
     if (inputRef.current) {
@@ -55,20 +62,24 @@ export default function ImageCompressor() {
     }
   }, []);
 
+  // Effect for component unmount cleanup
   useEffect(() => {
     return () => {
-      imageQueue.forEach(item => {
+      // Use the ref to get the latest queue state on unmount
+      queueRef.current.forEach(item => {
         if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
-        if (item.compressedBlob) URL.revokeObjectURL(URL.createObjectURL(item.compressedBlob));
       });
     };
-  }, [imageQueue]);
+  }, []);
 
   const handleFileChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
-    // Clear previous queue before adding new files
-    setImageQueue([]);
+    // Clear previous queue before adding new files, using the ref to ensure all URLs are revoked.
+    queueRef.current.forEach(item => {
+      if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
+    });
+    
     const newItems: ImageQueueItem[] = [];
 
     for (const file of Array.from(files)) {
@@ -88,7 +99,7 @@ export default function ImageCompressor() {
         const imageDimensions = await new Promise<ImageDimensions>((resolve, reject) => {
           const img = document.createElement('img');
           img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-          img.onerror = () => reject(new Error('Could not load image dimensions.'));
+          img.onerror = (err) => reject(new Error('Could not load image dimensions.'));
           img.src = originalPreview;
         });
 
@@ -119,40 +130,43 @@ export default function ImageCompressor() {
       return { status: 'error', error: 'Missing file or dimensions.' };
     }
   
-    try {
-      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = document.createElement('img');
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('Image load failed'));
-        img.src = item.originalPreview;
-      });
-  
-      const canvas = document.createElement('canvas');
-      canvas.width = item.imageDimensions.width;
-      canvas.height = item.imageDimensions.height;
-      const ctx = canvas.getContext('2d');
-  
-      if (!ctx) throw new Error("Could not get canvas context");
-      ctx.drawImage(img, 0, 0);
-  
-      const mimeType = 'image/webp';
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, mimeType, compressionQuality / 100);
-      });
-  
-      if (blob) {
-        return {
-          compressedBlob: blob,
-          compressedSize: blob.size,
-          status: 'done'
-        };
-      } else {
-        return { status: 'error', error: 'Canvas toBlob failed.' };
-      }
-    } catch (error) {
-        console.error("Image compression error:", error);
-        return { status: 'error', error: 'Compression failed.' };
-    }
+    return new Promise((resolvePromise) => {
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = item.imageDimensions!.width;
+          canvas.height = item.imageDimensions!.height;
+          const ctx = canvas.getContext('2d');
+      
+          if (!ctx) throw new Error("Could not get canvas context");
+          ctx.drawImage(img, 0, 0);
+      
+          const mimeType = 'image/webp';
+          const blob = await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob(resolve, mimeType, compressionQuality / 100);
+          });
+      
+          if (blob) {
+            resolvePromise({
+              compressedBlob: blob,
+              compressedSize: blob.size,
+              status: 'done'
+            });
+          } else {
+            resolvePromise({ status: 'error', error: 'Canvas toBlob failed.' });
+          }
+        } catch (error) {
+            console.error("Image compression error:", error);
+            resolvePromise({ status: 'error', error: 'Compression failed.' });
+        }
+      };
+      img.onerror = () => {
+        console.error("Image load failed for compression:", item.originalPreview);
+        resolvePromise({ status: 'error', error: 'Image load failed.' });
+      };
+      img.src = item.originalPreview;
+    });
   }, []);
 
   const processQueue = useCallback(async () => {
@@ -193,7 +207,7 @@ export default function ImageCompressor() {
     if (!item.compressedBlob) return;
     const url = URL.createObjectURL(item.compressedBlob);
     const a = document.createElement('a');
-    a.href = url;
+a.href = url;
     const originalName = item.originalFile.name.split('.').slice(0, -1).join('.') || 'compressed';
     a.download = `${originalName}-compressed.webp`;
     document.body.appendChild(a);
