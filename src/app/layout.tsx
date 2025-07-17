@@ -102,11 +102,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased bg-background">
-        <div className="ad-container-left bg-background">
-          <div className="w-40 h-full flex items-center justify-center">
-            <AdSenseAd slot="2414212592" />
-          </div>
-        </div>
+        <AdSenseAd slot="2414212592" className="ad-container-left bg-background" />
         <div className="flex flex-col min-h-screen lg:mx-40">
           <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-16 items-center">
@@ -185,9 +181,7 @@ export default function RootLayout({
           </main>
           
           <footer className="py-6 container">
-             <div className="ad-container-footer">
-               <AdSenseAd slot="2414212592" />
-            </div>
+             <AdSenseAd slot="2414212592" className="ad-container-footer" />
             <p className="text-center text-sm text-muted-foreground mt-4">
               Your files stay on your device. Always.
             </p>
@@ -195,11 +189,7 @@ export default function RootLayout({
 
           <Toaster />
         </div>
-        <div className="ad-container-right bg-background">
-           <div className="w-40 h-full flex items-center justify-center">
-             <AdSenseAd slot="2414212592" />
-          </div>
-        </div>
+        <AdSenseAd slot="2414212592" className="ad-container-right bg-background" />
       </body>
     </html>
   );
