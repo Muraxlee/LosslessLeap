@@ -1,6 +1,8 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 import { ArrowRightLeft, Minimize, FileImage, Combine, Lock, FileDown, ScanLine } from 'lucide-react';
+import React from 'react';
 
 const tools = [
   {
@@ -41,7 +43,23 @@ const tools = [
   },
 ];
 
+const AdPlaceholder = () => (
+  <div className="h-full">
+    <Card className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 p-6">
+      <div className="text-center">
+        <span className="text-xs text-muted-foreground">Advertisement</span>
+      </div>
+    </Card>
+  </div>
+);
+
 export default function Home() {
+  const itemsWithAds = [...tools];
+  // Insert an ad placeholder after the 3rd item
+  if (itemsWithAds.length > 3) {
+    itemsWithAds.splice(3, 0, 'ad' as any);
+  }
+
   return (
     <div className="container py-8 md:py-12">
       <div className="mb-12 max-w-3xl text-center mx-auto">
@@ -54,23 +72,29 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {tools.map((tool) => (
-          <Link href={tool.href} key={tool.href} className="group">
-            <Card className="h-full transition-all duration-200 group-hover:shadow-lg group-hover:border-primary/50 group-hover:-translate-y-1">
-              <CardHeader className="flex-row items-center gap-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <tool.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <CardTitle>{tool.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>{tool.description}</CardDescription>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        {itemsWithAds.map((item, index) => {
+          if (typeof item === 'string' && item === 'ad') {
+            return <AdPlaceholder key={`ad-${index}`} />;
+          }
+          const tool = item as (typeof tools)[0];
+          return (
+            <Link href={tool.href} key={tool.href} className="group">
+              <Card className="h-full transition-all duration-200 group-hover:shadow-lg group-hover:border-primary/50 group-hover:-translate-y-1">
+                <CardHeader className="flex-row items-center gap-4">
+                  <div className="bg-primary/10 p-3 rounded-lg">
+                    <tool.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>{tool.title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>{tool.description}</CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
