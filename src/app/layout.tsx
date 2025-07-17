@@ -81,87 +81,100 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen bg-background">
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex h-16 items-center">
-            <Link href="/" className="mr-6 flex items-center gap-3">
-              <Logo />
-              <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
-            </Link>
-            
-            <nav className="hidden items-center gap-2 text-sm md:flex">
-              {navGroups.map((group) => (
-                <DropdownMenu key={group.title}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">
-                      {group.title} <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {group.links.map(({ href, label, icon: Icon }) => (
-                      <DropdownMenuItem key={href} asChild>
-                        <Link href={href}>
-                          <Icon className="mr-2 h-4 w-4" />
-                          {label}
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ))}
-            </nav>
-
-            <div className="flex flex-1 items-center justify-end md:hidden">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Toggle Menu</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left">
-                   <SheetTitle className="sr-only">Menu</SheetTitle>
-                   <Link href="/" className="mr-6 flex items-center gap-3 mb-6">
-                      <Logo />
-                      <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
-                    </Link>
-                  <nav className="flex flex-col gap-2">
-                    <Accordion type="multiple" className="w-full">
-                      {navGroups.map((group) => (
-                        <AccordionItem value={group.title} key={group.title}>
-                           <AccordionTrigger className="text-base font-medium py-3 hover:no-underline">
-                              <div className="flex items-center gap-3">
-                                <group.icon className="h-5 w-5 text-primary" />
-                                {group.title}
-                              </div>
-                            </AccordionTrigger>
-                           <AccordionContent className="pl-4">
-                              <div className="flex flex-col gap-1 mt-2">
-                                {group.links.map(({ href, label, icon: Icon }) => (
-                                  <Button key={href} variant="ghost" asChild className="justify-start">
-                                    <Link href={href}><Icon className="mr-2 h-4 w-4"/>{label}</Link>
-                                  </Button>
-                                ))}
-                              </div>
-                           </AccordionContent>
-                        </AccordionItem>
+        <div className="ad-container-left">
+          {/* Left Skyscraper Ad */}
+        </div>
+        <div className="flex flex-col min-h-screen flex-1">
+          <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="container flex h-16 items-center">
+              <Link href="/" className="mr-6 flex items-center gap-3">
+                <Logo />
+                <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
+              </Link>
+              
+              <nav className="hidden items-center gap-2 text-sm md:flex">
+                {navGroups.map((group) => (
+                  <DropdownMenu key={group.title}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost">
+                        {group.title} <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {group.links.map(({ href, label, icon: Icon }) => (
+                        <DropdownMenuItem key={href} asChild>
+                          <Link href={href}>
+                            <Icon className="mr-2 h-4 w-4" />
+                            {label}
+                          </Link>
+                        </DropdownMenuItem>
                       ))}
-                    </Accordion>
-                  </nav>
-                </SheetContent>
-              </Sheet>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ))}
+              </nav>
+
+              <div className="flex flex-1 items-center justify-end md:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-5 w-5" />
+                      <span className="sr-only">Toggle Menu</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left">
+                     <SheetTitle className="sr-only">Menu</SheetTitle>
+                     <Link href="/" className="mr-6 flex items-center gap-3 mb-6">
+                        <Logo />
+                        <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
+                      </Link>
+                    <nav className="flex flex-col gap-2">
+                      <Accordion type="multiple" className="w-full">
+                        {navGroups.map((group) => (
+                          <AccordionItem value={group.title} key={group.title}>
+                             <AccordionTrigger className="text-base font-medium py-3 hover:no-underline">
+                                <div className="flex items-center gap-3">
+                                  <group.icon className="h-5 w-5 text-primary" />
+                                  {group.title}
+                                </div>
+                              </AccordionTrigger>
+                             <AccordionContent className="pl-4">
+                                <div className="flex flex-col gap-1 mt-2">
+                                  {group.links.map(({ href, label, icon: Icon }) => (
+                                    <Button key={href} variant="ghost" asChild className="justify-start">
+                                      <Link href={href}><Icon className="mr-2 h-4 w-4"/>{label}</Link>
+                                    </Button>
+                                  ))}
+                                </div>
+                             </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    </nav>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <main className="flex-1">
-          {children}
-        </main>
-        
-        <footer className="py-6 text-center text-sm text-muted-foreground container">
-          Your files stay on your device. Always.
-        </footer>
+          <main className="flex-1">
+            {children}
+          </main>
+          
+          <footer className="py-6 container">
+             <div className="ad-container-footer">
+              <span className="text-xs text-muted-foreground">Advertisement</span>
+            </div>
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              Your files stay on your device. Always.
+            </p>
+          </footer>
 
-        <Toaster />
+          <Toaster />
+        </div>
+        <div className="ad-container-right">
+          {/* Right Skyscraper Ad */}
+        </div>
       </body>
     </html>
   );
