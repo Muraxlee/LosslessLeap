@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, Lock, ChevronDown, Image as ImageIcon, File as FileIcon, FileDown } from 'lucide-react';
+import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, Lock, ChevronDown, Image as ImageIcon, File as FileIcon, FileDown, ScanLine } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'LosslessLeap - Free & Private Image & PDF Tools',
@@ -34,6 +34,7 @@ const navGroups = [
     links: [
       { href: '/compress-pdf', label: 'Compress PDF', icon: FileDown },
       { href: '/pdf-merger', label: 'Merge & Edit PDF', icon: Combine },
+      { href: '/scan-to-pdf', label: 'Scan to PDF', icon: ScanLine },
     ]
   }
 ];

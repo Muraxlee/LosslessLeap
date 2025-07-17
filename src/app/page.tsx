@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
-import { ArrowRightLeft, Minimize, FileImage, Combine, Lock, FileDown } from 'lucide-react';
+import { ArrowRightLeft, Minimize, FileImage, Combine, Lock, FileDown, ScanLine } from 'lucide-react';
 
 const tools = [
   {
@@ -32,6 +32,12 @@ const tools = [
     description: 'Combine multiple PDF files, and reorder or remove pages with ease.',
     href: '/pdf-merger',
     icon: Combine,
+  },
+  {
+    title: 'Scan to PDF',
+    description: 'Use your phone camera to scan documents directly to your browser.',
+    href: '/scan-to-pdf',
+    icon: ScanLine,
   },
 ];
 
