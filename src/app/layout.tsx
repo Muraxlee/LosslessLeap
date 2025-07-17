@@ -19,7 +19,7 @@ import Logo from '@/components/logo';
 
 const siteConfig = {
   name: "LosslessLeap",
-  url: "https://www.losslessleap.com",
+  url: "https://losslessleap.netlify.app",
   description: "Compress, convert images, and edit PDFs for free without a server. Fast, private, and easy to use.",
   keywords: ["image compressor", "pdf compressor", "image converter", "pdf merger", "image to pdf", "scan to pdf", "protect pdf", "free tools", "privacy"],
 };

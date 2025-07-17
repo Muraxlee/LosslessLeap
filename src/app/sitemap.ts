@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 
-const URL = 'https://www.losslessleap.com';
+const URL = 'https://losslessleap.netlify.app';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
