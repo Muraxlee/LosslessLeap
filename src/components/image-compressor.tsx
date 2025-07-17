@@ -36,7 +36,7 @@ export default function ImageCompressor() {
   const [isDragActive, setIsDragActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const queueRef = useRef<ImageQueueItem[]>([]);
+  const queueRef = useRef(imageQueue);
   queueRef.current = imageQueue;
 
   const { toast } = useToast();
@@ -159,11 +159,14 @@ export default function ImageCompressor() {
         } catch (error) {
             console.error("Image compression error:", error);
             resolvePromise({ status: 'error', error: 'Compression failed.' });
+        } finally {
+            URL.revokeObjectURL(img.src); // Clean up the image object URL
         }
       };
       img.onerror = () => {
         console.error("Image load failed for compression:", item.originalPreview);
         resolvePromise({ status: 'error', error: 'Image load failed.' });
+        URL.revokeObjectURL(img.src); // Clean up on error too
       };
       img.src = item.originalPreview;
     });
@@ -194,20 +197,23 @@ export default function ImageCompressor() {
 
   const handleQualityChange = (newQuality: number) => {
     setQuality(newQuality);
-    setImageQueue(prev => prev.map(i => i.status === 'error' ? i : {
-        ...i,
-        status: 'queued',
-        compressedBlob: null,
-        compressedSize: null,
-        error: undefined,
-    }));
+    if(imageQueue.length > 0){
+        setIsProcessingQueue(false); // Allow reprocessing
+        setImageQueue(prev => prev.map(i => i.status === 'error' ? i : {
+            ...i,
+            status: 'queued',
+            compressedBlob: null,
+            compressedSize: null,
+            error: undefined,
+        }));
+    }
   };
 
   const handleDownload = (item: ImageQueueItem) => {
     if (!item.compressedBlob) return;
     const url = URL.createObjectURL(item.compressedBlob);
     const a = document.createElement('a');
-a.href = url;
+    a.href = url;
     const originalName = item.originalFile.name.split('.').slice(0, -1).join('.') || 'compressed';
     a.download = `${originalName}-compressed.webp`;
     document.body.appendChild(a);
@@ -319,7 +325,7 @@ a.href = url;
                         min={0} max={100} step={1} 
                         onValueChange={([val]) => setQuality(val)}
                         onValueCommit={([val]) => handleQualityChange(val)}
-                        disabled={isProcessingQueue}
+                        disabled={isProcessingQueue && !allDone}
                       />
                   </div>
                   
@@ -345,7 +351,7 @@ a.href = url;
 
                   <div className="flex flex-col gap-3">
                       <Button onClick={handleDownloadAll} size="lg" disabled={!anyDone || isProcessingQueue}>
-                          <PackageCheck />
+                          <Download />
                           Download All
                       </Button>
                       <Button onClick={handleReset} variant="outline" size="lg">
