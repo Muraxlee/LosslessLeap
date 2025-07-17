@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import { UploadCloud, Loader2, Download, X, Sparkles, PackageCheck, XCircle } from 'lucide-react';
+import NextImage from 'next/image';
+import { UploadCloud, Loader2, Download, X, Sparkles, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -131,7 +131,7 @@ export default function ImageCompressor() {
     }
   
     return new Promise((resolvePromise) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = async () => {
         try {
           const canvas = document.createElement('canvas');
@@ -276,7 +276,7 @@ export default function ImageCompressor() {
                     return (
                     <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3">
                       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                        <Image src={item.originalPreview} alt={item.originalFile.name} fill className="object-cover" />
+                        <NextImage src={item.originalPreview} alt={item.originalFile.name} fill className="object-cover" />
                       </div>
                       <div className="flex-grow overflow-hidden">
                         <p className="truncate font-medium text-foreground">{item.originalFile.name}</p>
