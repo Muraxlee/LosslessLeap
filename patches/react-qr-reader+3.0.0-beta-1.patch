@@ -1,0 +1,13 @@
+patch-package
+--- a/node_modules/react-qr-reader/package.json
++++ b/node_modules/react-qr-reader/package.json
+@@ -37,6 +37,6 @@
+     "eslint-plugin-promise": "^5.1.0",
+     "typescript": "^4.4.4"
+   },
+-  "peerDependencies": {
+-    "react": "^16.8.0 || ^17.0.0"
++  "peerDependencies": { 
++    "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
+   }
+ }

@@ -2,64 +2,79 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
 import type { Peer, DataConnection } from 'peerjs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Camera, Send, CheckCircle, Wifi, WifiOff, XCircle } from 'lucide-react';
+import { Loader2, Camera, Send, CheckCircle, Wifi, WifiOff, XCircle, QrCode } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MobileScannerPage() {
-    const searchParams = useSearchParams();
     const { toast } = useToast();
 
     const [peer, setPeer] = useState<Peer | null>(null);
     const [conn, setConn] = useState<DataConnection | null>(null);
-    const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('connecting');
+    const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [lastImage, setLastImage] = useState<string | null>(null);
     const [isSending, setIsSending] = useState(false);
+    const [peerId, setPeerId] = useState<string | null>(null);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        const initializePeer = async () => {
-            const peerId = searchParams.get('peerId');
-            if (!peerId) {
-                setConnectionStatus('error');
-                toast({ variant: 'destructive', title: 'Missing Peer ID' });
-                return;
+        const getPeerIdFromHash = () => {
+            if (typeof window !== 'undefined') {
+                const hash = window.location.hash.substring(1);
+                if (hash) {
+                    setPeerId(hash);
+                }
             }
+        };
 
+        getPeerIdFromHash();
+        window.addEventListener('hashchange', getPeerIdFromHash);
+        return () => window.removeEventListener('hashchange', getPeerIdFromHash);
+    }, []);
+
+    useEffect(() => {
+        if (!peerId) return;
+
+        let peerInstance: Peer | null = null;
+        let connection: DataConnection | null = null;
+        
+        const initializePeer = async () => {
             try {
                 const { default: Peer } = await import('peerjs');
-                const localPeer = new Peer(); // Create a peer with a random ID
-                setPeer(localPeer);
+                peerInstance = new Peer();
+                setPeer(peerInstance);
+                setConnectionStatus('connecting');
 
-                localPeer.on('open', (id) => {
-                    const connection = localPeer.connect(peerId);
+                peerInstance.on('open', (id) => {
+                    connection = peerInstance!.connect(peerId);
                     setConn(connection);
-
+                    
                     connection.on('open', () => {
                         setConnectionStatus('connected');
+                        toast({ title: 'Desktop Connected!', description: 'You can now start scanning.' });
                     });
-
-                    connection.on('error', (err) => {
-                        console.error('Connection error:', err);
-                        setConnectionStatus('error');
-                    });
-                     connection.on('close', () => {
+                    
+                    connection.on('close', () => {
                         setConnectionStatus('disconnected');
+                        toast({ variant: 'destructive', title: 'Desktop Disconnected' });
+                        setConn(null);
                     });
                 });
-                 localPeer.on('error', (err) => {
+
+                peerInstance.on('error', (err) => {
                     console.error('PeerJS error:', err);
                     setConnectionStatus('error');
+                    toast({ variant: 'destructive', title: 'Connection Error' });
                 });
 
             } catch (error) {
-                console.error("Failed to initialize PeerJS", error);
+                console.error('Failed to initialize PeerJS', error);
                 setConnectionStatus('error');
             }
         };
@@ -67,13 +82,15 @@ export default function MobileScannerPage() {
         initializePeer();
 
         return () => {
-            conn?.close();
-            peer?.destroy();
+            connection?.close();
+            peerInstance?.destroy();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams]);
+    }, [peerId]);
 
     useEffect(() => {
+        if (connectionStatus !== 'connected') return;
+
         const getCameraPermission = async () => {
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -95,7 +112,7 @@ export default function MobileScannerPage() {
     
         getCameraPermission();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, []);
+      }, [connectionStatus]);
     
     const takePicture = useCallback(() => {
         const video = videoRef.current;
@@ -131,12 +148,36 @@ export default function MobileScannerPage() {
 
     const renderConnectionStatus = () => {
         switch (connectionStatus) {
-            case 'connecting': return <><Loader2 className="h-4 w-4 animate-spin" />Connecting...</>;
+            case 'connecting': return <><Loader2 className="h-4 w-4 animate-spin" />Connecting to Desktop...</>;
             case 'connected': return <><Wifi className="h-4 w-4 text-green-500"/>Connected to Desktop</>;
             case 'disconnected': return <><WifiOff className="h-4 w-4 text-red-500" />Disconnected</>;
             case 'error': return <><XCircle className="h-4 w-4 text-red-500"/>Connection Failed</>;
         }
     }
+    
+    if (!peerId) {
+        return (
+            <div className="flex flex-col h-screen bg-zinc-900 text-white p-4 items-center justify-center text-center">
+                <QrCode className="w-16 h-16 text-primary mb-4"/>
+                <h1 className="text-2xl font-bold mb-2">Scan QR Code from Desktop</h1>
+                <p className="text-zinc-400 mb-6 max-w-sm">Please navigate to the "Scan to PDF" page on your computer and scan the QR code displayed there with your phone's camera.</p>
+            </div>
+        )
+    }
+
+    if (connectionStatus !== 'connected') {
+         return (
+            <div className="flex flex-col h-screen bg-zinc-900 text-white p-4 items-center justify-center text-center">
+                 <header className="absolute top-4 p-4 bg-zinc-800/80 backdrop-blur-sm rounded-lg text-sm font-medium z-10 flex items-center justify-center gap-2">
+                    {renderConnectionStatus()}
+                </header>
+                <div className="flex items-center justify-center">
+                    <Loader2 className="h-16 w-16 animate-spin text-primary"/>
+                </div>
+            </div>
+        )
+    }
+
 
     return (
         <div className="flex flex-col h-screen bg-black text-white">
