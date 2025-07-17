@@ -207,7 +207,7 @@ a.click();
                     <p className="mt-2 text-lg text-muted-foreground">Use your phone camera to scan documents directly to your browser.</p>
                 </div>
                  <div className="mx-auto max-w-5xl">
-                     <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-3">
+                     <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-3">
                         {steps.map((step, i) => (
                             <div key={i} className="flex flex-col items-center text-center">
                             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">

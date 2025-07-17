@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import ImageConverter from '@/components/image-converter';
 import { UploadCloud, ArrowRightLeft, Download } from 'lucide-react';
@@ -39,7 +40,7 @@ export default function ImageConverterPage() {
       </div>
 
       <div className="mx-auto max-w-5xl">
-        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-3">
           {steps.map((step, i) => (
              <div key={i} className="flex flex-col items-center text-center">
                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
