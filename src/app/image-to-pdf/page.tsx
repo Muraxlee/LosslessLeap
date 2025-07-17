@@ -1,7 +1,13 @@
-
+import type { Metadata } from 'next';
 import ImageToPdf from '@/components/image-to-pdf';
 import { UploadCloud, FileImage, Download } from 'lucide-react';
 import AdSenseAd from '@/components/adsense-ad';
+
+export const metadata: Metadata = {
+    title: 'Image to PDF Converter',
+    description: 'Easily combine multiple JPG or PNG images into a single PDF file. Free, fast, and completely private.',
+    keywords: ['image to pdf', 'jpg to pdf', 'png to pdf', 'convert image to pdf', 'combine images pdf'],
+};
 
 const steps = [
   {

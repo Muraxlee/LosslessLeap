@@ -15,11 +15,50 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, Lock, ChevronDown, Image as ImageIcon, File as FileIcon, FileDown, ScanLine } from 'lucide-react';
 import AdSenseAd from '@/components/adsense-ad';
+import Logo from '@/components/logo';
+
+const siteConfig = {
+  name: "LosslessLeap",
+  url: "https://www.losslessleap.com",
+  description: "Compress, convert images, and edit PDFs for free without a server. Fast, private, and easy to use.",
+  keywords: ["image compressor", "pdf compressor", "image converter", "pdf merger", "image to pdf", "scan to pdf", "protect pdf", "free tools", "privacy"],
+};
 
 export const metadata: Metadata = {
-  title: 'LosslessLeap - Free & Private Image & PDF Tools',
-  description: 'Compress, convert images, and edit PDFs for free without a server. Fast, private, and easy to use.',
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: `${siteConfig.name} - Free & Private Image & PDF Tools`,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteConfig.url,
+    title: siteConfig.name,
+    description: siteConfig.description,
+    siteName: siteConfig.name,
+    images: [
+      {
+        url: `${siteConfig.url}/og-image.png`, // Update with your actual OG image path
+        width: 1200,
+        height: 630,
+        alt: siteConfig.name,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [`${siteConfig.url}/og-image.png`], // Update with your actual OG image path
+  },
+  icons: {
+    icon: "/favicon.ico",
+  }
 };
+
 
 const navGroups = [
   {
@@ -38,30 +77,11 @@ const navGroups = [
       { href: '/compress-pdf', label: 'Compress PDF', icon: FileDown },
       { href: '/pdf-merger', label: 'Merge & Edit PDF', icon: Combine },
       { href: '/scan-to-pdf', label: 'Scan to PDF', icon: ScanLine },
+      { href: '/protect-pdf', label: 'Protect PDF', icon: Lock },
     ]
   }
 ];
 
-const Logo = () => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-7 w-7 text-primary"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-      <path d="m17 10-2.5-2.5" />
-      <path d="m7 10 2.5-2.5" />
-    </svg>
-)
 
 export default function RootLayout({
   children,

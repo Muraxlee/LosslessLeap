@@ -1,7 +1,13 @@
-
+import type { Metadata } from 'next';
 import ImageCompressor from '@/components/image-compressor';
 import { UploadCloud, Sparkles, Download } from 'lucide-react';
 import AdSenseAd from '@/components/adsense-ad';
+
+export const metadata: Metadata = {
+    title: 'Free Image Compressor',
+    description: 'Compress JPG, PNG, and WebP images to reduce file size without sacrificing quality. Our tool is fast, free, and private.',
+    keywords: ['image compressor', 'compress image', 'reduce image size', 'photo compressor', 'image optimizer'],
+};
 
 const steps = [
   {

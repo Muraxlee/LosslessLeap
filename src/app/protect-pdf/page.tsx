@@ -1,7 +1,13 @@
-
+import type { Metadata } from 'next';
 import ProtectPdf from '@/components/protect-pdf';
 import { UploadCloud, Lock, Download } from 'lucide-react';
 import AdSenseAd from '@/components/adsense-ad';
+
+export const metadata: Metadata = {
+    title: 'Protect PDF with Password',
+    description: 'Add a strong password to your PDF files to encrypt and secure them from unauthorized access. Free and private.',
+    keywords: ['protect pdf', 'encrypt pdf', 'password protect pdf', 'pdf security', 'secure pdf'],
+};
 
 const steps = [
   {

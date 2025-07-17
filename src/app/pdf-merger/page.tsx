@@ -1,7 +1,13 @@
-
+import type { Metadata } from 'next';
 import PdfMerger from '@/components/pdf-merger';
 import { UploadCloud, Combine, Download } from 'lucide-react';
 import AdSenseAd from '@/components/adsense-ad';
+
+export const metadata: Metadata = {
+    title: 'Merge & Edit PDF Free',
+    description: 'Combine multiple PDF files into one. Reorder, arrange, or remove pages easily with our free and secure PDF merger tool.',
+    keywords: ['pdf merger', 'combine pdf', 'merge pdf files', 'edit pdf pages', 'pdf combiner'],
+};
 
 const steps = [
   {

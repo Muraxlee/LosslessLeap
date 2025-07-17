@@ -36,6 +36,12 @@ const tools = [
     href: '/pdf-merger',
     icon: Combine,
   },
+   {
+    title: 'Protect PDF',
+    description: 'Add a password to your PDF to secure it from unauthorized access.',
+    href: '/protect-pdf',
+    icon: Lock,
+  },
   {
     title: 'Scan to PDF',
     description: 'Use your phone camera to scan documents directly to your browser.',

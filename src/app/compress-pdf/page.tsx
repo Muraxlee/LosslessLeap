@@ -1,8 +1,14 @@
-
+import type { Metadata } from 'next';
 import PdfCompressor from '@/components/pdf-compressor';
 import { UploadCloud, Sparkles, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import AdSenseAd from '@/components/adsense-ad';
+
+export const metadata: Metadata = {
+    title: 'Compress PDF Free',
+    description: 'Reduce the file size of your PDFs quickly and for free while maintaining the best possible quality. No file uploads required.',
+    keywords: ['compress pdf', 'reduce pdf size', 'pdf optimizer', 'free pdf compressor'],
+};
 
 const steps = [
   {

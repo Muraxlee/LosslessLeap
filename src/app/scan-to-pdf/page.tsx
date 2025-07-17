@@ -2,6 +2,7 @@
 
 'use client';
 
+import type { Metadata } from 'next';
 import { useState, useEffect, useRef, useCallback, DragEvent as ReactDragEvent } from 'react';
 import NextImage from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,6 +15,9 @@ import QRCode from 'qrcode';
 import { Download, Loader2, Smartphone, Wifi, WifiOff, X, ScanLine, QrCode, Camera } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import AdSenseAd from '@/components/adsense-ad';
+
+// Note: We can't use the 'metadata' export in a 'use client' component.
+// SEO for this page should be handled in a parent layout or via other means if needed.
 
 interface ScannedImage {
     id: string;

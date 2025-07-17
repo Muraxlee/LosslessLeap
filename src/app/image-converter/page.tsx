@@ -1,7 +1,13 @@
-
+import type { Metadata } from 'next';
 import ImageConverter from '@/components/image-converter';
 import { UploadCloud, ArrowRightLeft, Download } from 'lucide-react';
 import AdSenseAd from '@/components/adsense-ad';
+
+export const metadata: Metadata = {
+    title: 'Online Image Converter',
+    description: 'Convert images to PNG, JPG, or WebP format for free. Fast, easy, and secure processing directly in your browser.',
+    keywords: ['image converter', 'convert to png', 'convert to jpg', 'convert to webp', 'image format'],
+};
 
 const steps = [
   {
