@@ -73,8 +73,8 @@ export default function ImageCompressor() {
   const handleFileChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
-    // Clear previous queue and revoke old URLs before adding new files
-    handleReset();
+    // Clear previous queue's object URLs before adding new files
+    queueRef.current.forEach(item => URL.revokeObjectURL(item.originalPreview));
     
     const newItems: ImageQueueItem[] = [];
 
@@ -119,7 +119,7 @@ export default function ImageCompressor() {
       }
     }
     setImageQueue(newItems);
-  }, [toast, handleReset]);
+  }, [toast]);
   
   const compressImage = useCallback(async (item: ImageQueueItem, compressionQuality: number): Promise<Partial<ImageQueueItem>> => {
     if (!item.originalFile || !item.imageDimensions) {
