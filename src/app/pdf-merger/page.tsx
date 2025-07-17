@@ -1,4 +1,24 @@
+
 import PdfMerger from '@/components/pdf-merger';
+import { UploadCloud, Combine, Download } from 'lucide-react';
+
+const steps = [
+  {
+    icon: UploadCloud,
+    title: 'Upload PDFs',
+    description: 'Select one or more PDF files you want to work with.',
+  },
+  {
+    icon: Combine,
+    title: 'Arrange Pages',
+    description: 'Drag and drop to reorder or remove pages from any of the PDFs.',
+  },
+  {
+    icon: Download,
+    title: 'Save Merged PDF',
+    description: 'Combine all pages into a new, single PDF document.',
+  },
+];
 
 export default function PdfMergerPage() {
   return (
@@ -9,7 +29,21 @@ export default function PdfMergerPage() {
           Combine PDFs, reorder pages, or remove them before saving.
         </p>
       </div>
-      <PdfMerger />
+
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-3">
+          {steps.map((step, i) => (
+             <div key={i} className="flex flex-col items-center text-center">
+               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                 <step.icon className="h-6 w-6" />
+               </div>
+               <h3 className="mb-2 text-lg font-semibold">{step.title}</h3>
+               <p className="text-muted-foreground">{step.description}</p>
+             </div>
+          ))}
+        </div>
+        <PdfMerger />
+      </div>
     </div>
   );
 }

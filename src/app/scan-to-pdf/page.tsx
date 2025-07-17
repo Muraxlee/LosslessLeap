@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback, DragEvent as ReactDragEvent } from 'react';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Peer, DataConnection } from 'peerjs';
 import QRCode from 'qrcode';
-import { Download, Loader2, Smartphone, Wifi, WifiOff, X, ScanLine } from 'lucide-react';
+import { Download, Loader2, Smartphone, Wifi, WifiOff, X, ScanLine, QrCode, Camera } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 
 interface ScannedImage {
@@ -28,6 +29,25 @@ const ScanIllustration = () => (
         <path d="M228.093 92.2174C231.259 87.0853 231.259 80.4147 228.093 75.2826" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
     </svg>
 );
+
+const steps = [
+  {
+    icon: QrCode,
+    title: 'Scan QR Code',
+    description: 'Use your phone\'s camera to scan the QR code and open the link.',
+  },
+  {
+    icon: Camera,
+    title: 'Scan with Phone',
+    description: 'Take pictures of your documents using your phone\'s browser.',
+  },
+  {
+    icon: Download,
+    title: 'Download PDF',
+    description: 'Arrange your scans and download them as a single PDF file.',
+  },
+];
+
 
 export default function ScanToPdfPage() {
     const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -160,34 +180,46 @@ a.click();
     
     if (connectionStatus !== 'connected' && scannedImages.length === 0) {
         return (
-            <div className="w-full max-w-4xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                    <Card className="p-8 text-center">
-                        <h3 className="text-xl font-semibold text-foreground">1. Scan QR Code</h3>
-                        <p className="text-muted-foreground mt-2 mb-6">
-                            Use your phone's camera to scan this QR code to connect.
-                        </p>
-                        <div className="relative aspect-square max-w-xs mx-auto flex items-center justify-center p-4 bg-white rounded-lg">
-                            {isLoadingQr && <Skeleton className="absolute inset-4 rounded-lg bg-gray-200" />}
-                            {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code to scan" className="w-full h-full object-contain" />}
+            <div className="container py-8">
+                <div className="mb-8 text-center">
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Scan to PDF</h1>
+                    <p className="mt-2 text-lg text-muted-foreground">Use your phone camera to scan documents directly to your browser.</p>
+                </div>
+                 <div className="mx-auto max-w-5xl">
+                     <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-3">
+                        {steps.map((step, i) => (
+                            <div key={i} className="flex flex-col items-center text-center">
+                            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <step.icon className="h-6 w-6" />
+                            </div>
+                            <h3 className="mb-2 text-lg font-semibold">{step.title}</h3>
+                            <p className="text-muted-foreground">{step.description}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <Card className="p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <div className="text-center md:text-left">
+                                <h3 className="text-xl font-semibold text-foreground">Connect your Phone</h3>
+                                <p className="text-muted-foreground mt-2 mb-6">
+                                    Scan the QR code with your mobile device to begin.
+                                    <br/>
+                                    <Badge variant={connectionStatus === 'connected' ? "default": "secondary"} className={`mt-2 ${connectionStatus === 'connected' ? "bg-green-100 text-green-800" : ""}`}>
+                                        {connectionStatus === 'connected' ? <><Wifi className="mr-2 h-4 w-4"/> Connected</> : <><WifiOff className="mr-2 h-4 w-4"/> {connectionStatus}</>}
+                                    </Badge>
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Your phone and computer must be on the same network.
+                                    Do not close this browser tab.
+                                </p>
+                            </div>
+                            <div className="relative aspect-square max-w-xs mx-auto flex items-center justify-center p-4 bg-white rounded-lg">
+                                {isLoadingQr && <Skeleton className="absolute inset-4 rounded-lg bg-gray-200" />}
+                                {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code to scan" className="w-full h-full object-contain" />}
+                            </div>
                         </div>
                     </Card>
-                    
-                    <div className="p-8 text-center md:text-left">
-                        <h3 className="text-xl font-semibold text-foreground">2. Follow Instructions</h3>
-                        <div className="mt-2 mb-6">
-                            <Badge variant={connectionStatus === 'connected' ? "default": "secondary"} className={connectionStatus === 'connected' ? "bg-green-100 text-green-800" : ""}>
-                                {connectionStatus === 'connected' ? <><Wifi className="mr-2 h-4 w-4"/> Connected</> : <><WifiOff className="mr-2 h-4 w-4"/> {connectionStatus}</>}
-                            </Badge>
-                        </div>
-                        <p className="text-muted-foreground mb-6">
-                            Follow instructions on your mobile screen. Scanned images will appear here automatically.
-                        </p>
-                        <p className="text-muted-foreground mb-8">
-                            Do not close this tab.
-                        </p>
-                        <ScanIllustration />
-                    </div>
                 </div>
             </div>
         );
@@ -195,7 +227,7 @@ a.click();
 
 
     return (
-        <div className="w-full max-w-7xl mx-auto">
+        <div className="container py-8 w-full max-w-7xl mx-auto">
             <Card>
                 <CardHeader>
                     <CardTitle>Scanned Documents</CardTitle>
