@@ -233,54 +233,53 @@ export default function ImageConverter() {
   const anyDone = imageQueue.some(i => i.status === 'done');
 
   return (
-    <div className="w-full max-w-7xl">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div className="w-full max-w-7xl mx-auto">
+      <Card>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 p-6">
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Image Queue</CardTitle>
-                <CardDescription>{imageQueue.length} image(s) to convert. { isProcessingQueue ? 'Converting...' : (allDone ? 'Done!' : '') }</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2">
-                  {imageQueue.map(item => (
-                    <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3">
-                      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                        <NextImage src={item.originalPreview} alt={item.originalFile.name} fill className="object-cover" />
-                      </div>
-                      <div className="flex-grow overflow-hidden">
-                        <p className="truncate font-medium text-foreground">{item.originalFile.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatBytes(item.originalSize)}
-                          {item.convertedSize !== null && ` → ${formatBytes(item.convertedSize)}`}
-                        </p>
-                      </div>
-                      <div className="flex w-32 flex-shrink-0 items-center justify-end gap-2">
-                          {item.status === 'converting' && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
-                          {item.status === 'done' && (
-                            <Button size="icon" variant="ghost" onClick={() => handleDownload(item)} aria-label="Download image"><Download className="h-5 w-5"/></Button>
-                          )}
-                           {item.status === 'error' && (
-                            <div className="flex items-center gap-2 text-destructive">
-                                <XCircle className="h-6 w-6" />
-                                <span className="text-sm">Failed</span>
-                            </div>
-                           )}
-                          {item.status === 'queued' && <span className="text-sm text-muted-foreground">Queued</span>}
-                      </div>
+            <CardHeader className="p-0 mb-4">
+              <CardTitle>Image Queue</CardTitle>
+              <CardDescription>{imageQueue.length} image(s) to convert. { isProcessingQueue ? 'Converting...' : (allDone ? 'Done!' : '') }</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                {imageQueue.map(item => (
+                  <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3">
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                      <NextImage src={item.originalPreview} alt={item.originalFile.name} fill className="object-cover" />
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="flex-grow overflow-hidden">
+                      <p className="truncate font-medium text-foreground">{item.originalFile.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatBytes(item.originalSize)}
+                        {item.convertedSize !== null && ` → ${formatBytes(item.convertedSize)}`}
+                      </p>
+                    </div>
+                    <div className="flex w-32 flex-shrink-0 items-center justify-end gap-2">
+                        {item.status === 'converting' && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                        {item.status === 'done' && (
+                          <Button size="icon" variant="ghost" onClick={() => handleDownload(item)} aria-label="Download image"><Download className="h-5 w-5"/></Button>
+                        )}
+                         {item.status === 'error' && (
+                          <div className="flex items-center gap-2 text-destructive">
+                              <XCircle className="h-6 w-6" />
+                              <span className="text-sm">Failed</span>
+                          </div>
+                         )}
+                        {item.status === 'queued' && <span className="text-sm text-muted-foreground">Queued</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
           </div>
           
           <div>
-            <Card className="sticky top-20">
-              <CardHeader>
+            <div className="sticky top-20">
+              <CardHeader className="p-0 mb-4">
                   <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Settings</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                   <div className="grid gap-4">
                       <div className="space-y-2">
                           <Label htmlFor="format" className="text-base">Output Format</Label>
@@ -310,9 +309,10 @@ export default function ImageConverter() {
                       </Button>
                   </div>
               </CardContent>
-            </Card>
+            </div>
           </div>
         </div>
+      </Card>
     </div>
   );
 }

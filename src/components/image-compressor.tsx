@@ -261,15 +261,15 @@ export default function ImageCompressor() {
   const anyDone = imageQueue.some(i => i.status === 'done');
 
   return (
-    <div className="w-full max-w-7xl">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div className="w-full max-w-7xl mx-auto">
+      <Card>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 p-6">
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
+              <CardHeader className="p-0 mb-4">
                 <CardTitle>Image Queue</CardTitle>
                 <CardDescription>{imageQueue.length} image(s) in queue. { isProcessingQueue ? 'Compressing...' : (allDone ? 'Done!' : '') }</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2">
                   {imageQueue.map(item => {
                     const reduction = item.originalSize && item.compressedSize ? ((item.originalSize - item.compressedSize) / item.originalSize) * 100 : 0;
@@ -305,15 +305,14 @@ export default function ImageCompressor() {
                   )})}
                 </div>
               </CardContent>
-            </Card>
           </div>
           
           <div>
-            <Card className="sticky top-20">
-              <CardHeader>
+            <div className="sticky top-20">
+              <CardHeader className="p-0 mb-4">
                   <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Settings</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                   <div className="grid gap-4">
                       <div className="flex items-center justify-between">
                           <Label htmlFor="quality" className="text-base">Quality</Label>
@@ -360,9 +359,10 @@ export default function ImageCompressor() {
                       </Button>
                   </div>
               </CardContent>
-            </Card>
+            </div>
           </div>
         </div>
+      </Card>
     </div>
   );
 }
