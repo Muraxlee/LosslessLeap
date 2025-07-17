@@ -67,7 +67,8 @@ export default function ImageCompressor() {
   const handleFileChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
-    handleReset();
+    // Clear previous queue before adding new files
+    setImageQueue([]);
     const newItems: ImageQueueItem[] = [];
 
     for (const file of Array.from(files)) {
@@ -111,7 +112,7 @@ export default function ImageCompressor() {
       }
     }
     setImageQueue(newItems);
-  }, [handleReset, toast]);
+  }, [toast]);
   
   const compressImage = useCallback(async (item: ImageQueueItem, compressionQuality: number): Promise<Partial<ImageQueueItem>> => {
     if (!item.originalFile || !item.imageDimensions) {
