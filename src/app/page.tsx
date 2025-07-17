@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
-import { ArrowRightLeft, Minimize, FileImage, Combine } from 'lucide-react';
+import { ArrowRightLeft, Minimize, FileImage, Combine, Lock } from 'lucide-react';
 
 const tools = [
   {
@@ -27,6 +27,12 @@ const tools = [
     href: '/pdf-merger',
     icon: Combine,
   },
+  {
+    title: 'Protect PDF',
+    description: 'Add a password to your PDF files to prevent unauthorized access.',
+    href: '/protect-pdf',
+    icon: Lock,
+  },
 ];
 
 export default function Home() {
@@ -41,7 +47,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {tools.map((tool) => (
           <Link href={tool.href} key={tool.href} className="group">
             <Card className="h-full transition-all duration-200 group-hover:shadow-lg group-hover:border-primary/50 group-hover:-translate-y-1">

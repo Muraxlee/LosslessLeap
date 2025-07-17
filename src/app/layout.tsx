@@ -4,7 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Minimize, ArrowRightLeft, FileImage, Combine } from 'lucide-react';
+import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, Lock } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'LosslessLeap - Free & Private Image & PDF Tools',
@@ -16,6 +16,7 @@ const navLinks = [
   { href: '/image-converter', label: 'Convert Image', icon: ArrowRightLeft },
   { href: '/image-to-pdf', label: 'Image to PDF', icon: FileImage },
   { href: '/pdf-merger', label: 'Merge & Edit PDF', icon: Combine },
+  { href: '/protect-pdf', label: 'Protect PDF', icon: Lock },
 ];
 
 const Logo = () => (
