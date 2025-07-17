@@ -187,12 +187,12 @@ export default function ImageToPdf() {
         onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
         className={cn("w-full max-w-lg border-2 border-dashed transition-colors mx-auto", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
       >
-        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+        <CardContent className="flex flex-col items-center justify-center p-12 text-center">
           <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="image/png, image/jpeg" multiple />
           <UploadCloud className="mx-auto h-16 w-16 text-muted-foreground" />
           <p className="mt-4 text-lg font-semibold text-foreground">Drag & drop your images here</p>
           <p className="mt-1 text-sm text-muted-foreground">or</p>
-          <Button onClick={onBrowseClick} variant="outline" className="mt-4">Browse Files</Button>
+          <Button onClick={onBrowseClick} className="mt-4">Browse Files</Button>
           <p className="mt-4 text-xs text-muted-foreground">Supports PNG and JPG</p>
         </CardContent>
       </Card>
@@ -201,31 +201,31 @@ export default function ImageToPdf() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <Card>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 p-6">
-            <div className="lg:col-span-2">
-                <CardHeader className="p-0 mb-4">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
                     <CardTitle className="flex items-center gap-2"><FileImage className="text-primary"/> Image Queue</CardTitle>
                     <CardDescription>Drag to reorder images, then click "Create PDF".</CardDescription>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" onDragOver={handleDragOver}>
                         {imageQueue.map((item, index) => (
                             <div 
                                 key={item.id} 
-                                className="relative group aspect-square cursor-grab"
+                                className="relative group aspect-square cursor-grab rounded-lg overflow-hidden border"
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, index)}
                                 onDragEnter={(e) => handleDragEnter(e, index)}
                                 onDragEnd={handleDragEnd}
                             >
-                                <NextImage src={item.preview} alt={item.file.name} fill className="object-cover rounded-md" />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
+                                <NextImage src={item.preview} alt={item.file.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <Button size="icon" variant="destructive" onClick={() => removeItem(item.id)} aria-label="Remove image">
                                         <X className="h-5 w-5"/>
                                     </Button>
                                 </div>
-                                <div className="absolute top-1 left-1 bg-black/50 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                                <div className="absolute top-1 left-1 bg-black/60 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
                                   {index + 1}
                                 </div>
                             </div>
@@ -243,14 +243,15 @@ export default function ImageToPdf() {
                         </Card>
                     </div>
                 </CardContent>
-            </div>
+            </Card>
+        </div>
           
-            <div>
-              <div className="sticky top-20">
-                <CardHeader className="p-0 mb-4">
+        <div className="sticky top-20 self-start">
+            <Card>
+                <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Settings</CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent>
                     <div className="grid gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="page-size" className="text-base">Page Size</Label>
@@ -292,12 +293,9 @@ export default function ImageToPdf() {
                         </Button>
                     </div>
                 </CardContent>
-              </div>
-            </div>
+            </Card>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
-
-    

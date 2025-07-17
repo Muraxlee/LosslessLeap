@@ -32,7 +32,7 @@ const tools = [
 export default function Home() {
   return (
     <div className="container py-8 md:py-12">
-      <div className="mb-10 max-w-2xl text-center mx-auto">
+      <div className="mb-12 max-w-3xl text-center mx-auto">
         <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
           Free & Private Image and PDF Tools
         </h2>
@@ -44,7 +44,7 @@ export default function Home() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
         {tools.map((tool) => (
           <Link href={tool.href} key={tool.href} className="group">
-            <Card className="h-full transition-all group-hover:shadow-md group-hover:border-primary/50">
+            <Card className="h-full transition-all duration-200 group-hover:shadow-lg group-hover:border-primary/50 group-hover:-translate-y-1">
               <CardHeader className="flex-row items-center gap-4">
                 <div className="bg-primary/10 p-3 rounded-lg">
                   <tool.icon className="h-6 w-6 text-primary" />

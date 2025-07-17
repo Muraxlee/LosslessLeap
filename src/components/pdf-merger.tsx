@@ -46,13 +46,11 @@ export default function PdfMerger() {
   const loadPdfPages = async (file: File): Promise<PageItem[]> => {
     try {
       const arrayBuffer = await file.arrayBuffer();
-      // Use ignoreEncryption: true to handle some protected files, though fully encrypted ones will still fail
       const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
       const pageCount = pdfDoc.getPageCount();
       const id = `${file.name}-${file.lastModified}-${file.size}`;
       
       const newPdfFileItem = { id, file };
-      // Use a functional update to correctly access the previous state
       setPdfFiles(prev => new Map(prev).set(id, newPdfFileItem));
 
       return Array.from({ length: pageCount }, (_, i) => ({
@@ -90,7 +88,7 @@ export default function PdfMerger() {
     
     setPages(prev => [...prev, ...flattenedNewPages]);
     setIsLoading(false);
-  }, [toast]); // loadPdfPages is not a dependency as it's defined outside and doesn't change
+  }, [toast]);
   
   const removePage = (id: string) => {
     setPages(prev => {
@@ -189,12 +187,12 @@ export default function PdfMerger() {
         onDragEnter={handleGlobalDrag} onDragLeave={handleGlobalDrag} onDragOver={handleGlobalDrag} onDrop={handleDrop}
         className={cn("w-full max-w-lg border-2 border-dashed transition-colors mx-auto", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
       >
-        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+        <CardContent className="flex flex-col items-center justify-center p-12 text-center">
           <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="application/pdf" multiple />
           <UploadCloud className="mx-auto h-16 w-16 text-muted-foreground" />
           <p className="mt-4 text-lg font-semibold text-foreground">Drag & drop your PDFs here</p>
           <p className="mt-1 text-sm text-muted-foreground">or</p>
-          <Button onClick={onBrowseClick} variant="outline" className="mt-4">Browse Files</Button>
+          <Button onClick={onBrowseClick} className="mt-4">Browse Files</Button>
           <p className="mt-4 text-xs text-muted-foreground">Add multiple PDFs to merge and edit</p>
         </CardContent>
       </Card>
@@ -203,74 +201,76 @@ export default function PdfMerger() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <Card>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 p-6">
-          <div className="lg:col-span-2">
-            <CardHeader className="p-0 mb-4">
-              <CardTitle className="flex items-center gap-2"><Combine className="text-primary"/> PDF Pages</CardTitle>
-              <CardDescription>Drag to reorder pages, then click "Save PDF".</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-40">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="ml-4 text-muted-foreground">Loading PDFs...</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4" onDragOver={handleDragOver}>
-                  {pages.map((page, index) => {
-                    const pdfFile = pdfFiles.get(page.pdfId)?.file;
-                    return (
-                      <div 
-                        key={page.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, index)}
-                        onDragEnter={(e) => handleDragEnter(e, index)}
-                        onDragEnd={handleDragEnd}
-                        className="relative group aspect-[3/4] cursor-grab bg-background rounded-md border"
-                      >
-                        <div className="absolute inset-0 z-0">
-                          {pdfFile && (
-                            <PagePreview file={pdfFile} pageNumber={page.originalPageIndex + 1} />
-                          )}
-                        </div>
-                        <div className="absolute inset-0 z-10 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
-                          <Button
-                            size="icon"
-                            variant="destructive"
-                            onClick={() => removePage(page.id)}
-                            aria-label={`Remove page ${page.originalPageIndex + 1}`}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Combine className="text-primary"/> PDF Pages</CardTitle>
+                    <CardDescription>Drag to reorder pages, then click "Save PDF".</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-40">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <p className="ml-4 text-muted-foreground">Loading PDFs...</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4" onDragOver={handleDragOver}>
+                      {pages.map((page, index) => {
+                        const pdfFile = pdfFiles.get(page.pdfId)?.file;
+                        return (
+                          <div 
+                            key={page.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragEnter={(e) => handleDragEnter(e, index)}
+                            onDragEnd={handleDragEnd}
+                            className="relative group aspect-[3/4] cursor-grab bg-background rounded-md border"
                           >
-                            <X className="h-5 w-5"/>
-                          </Button>
-                        </div>
-                         <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-md">
-                           <p className="text-xs text-white truncate w-full text-center" title={page.pdfName}>{page.pdfName} - {page.originalPageIndex + 1}</p>
-                         </div>
-                      </div>
-                  )})}
-                  <Card 
-                    onClick={onBrowseClick}
-                    onDragEnter={handleGlobalDrag} onDragLeave={handleGlobalDrag} onDragOver={handleGlobalDrag} onDrop={handleDrop}
-                    className={cn("w-full aspect-[3/4] border-2 border-dashed transition-colors flex items-center justify-center cursor-pointer", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
-                  >
-                      <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="application/pdf" multiple />
-                      <div className="text-center text-muted-foreground">
-                        <UploadCloud className="mx-auto h-10 w-10" />
-                        <p className="mt-2 text-sm">Add more</p>
-                      </div>
-                  </Card>
-                </div>
-              )}
-            </CardContent>
-          </div>
-          
-          <div>
-            <div className="sticky top-20">
-              <CardHeader className="p-0 mb-4">
+                            <div className="absolute inset-0 z-0">
+                              {pdfFile && (
+                                <PagePreview file={pdfFile} pageNumber={page.originalPageIndex + 1} />
+                              )}
+                            </div>
+                            <div className="absolute inset-0 z-10 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
+                              <Button
+                                size="icon"
+                                variant="destructive"
+                                onClick={() => removePage(page.id)}
+                                aria-label={`Remove page ${page.originalPageIndex + 1}`}
+                              >
+                                <X className="h-5 w-5"/>
+                              </Button>
+                            </div>
+                             <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-md">
+                               <p className="text-xs text-white truncate w-full text-center" title={page.pdfName}>{page.pdfName} - {page.originalPageIndex + 1}</p>
+                             </div>
+                          </div>
+                      )})}
+                      <Card 
+                        onClick={onBrowseClick}
+                        onDragEnter={handleGlobalDrag} onDragLeave={handleGlobalDrag} onDragOver={handleGlobalDrag} onDrop={handleDrop}
+                        className={cn("w-full aspect-[3/4] border-2 border-dashed transition-colors flex items-center justify-center cursor-pointer", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
+                      >
+                          <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="application/pdf" multiple />
+                          <div className="text-center text-muted-foreground">
+                            <UploadCloud className="mx-auto h-10 w-10" />
+                            <p className="mt-2 text-sm">Add more</p>
+                          </div>
+                      </Card>
+                    </div>
+                  )}
+                </CardContent>
+            </Card>
+        </div>
+        
+        <div className="sticky top-20 self-start">
+            <Card>
+              <CardHeader>
                 <CardTitle>Actions</CardTitle>
+                <CardDescription>Actions for your merged document.</CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent>
                 <div className="flex flex-col gap-3">
                   <Button onClick={mergeAndSavePdfs} size="lg" disabled={isProcessing || isLoading || pages.length === 0}>
                     {isProcessing ? (
@@ -286,10 +286,9 @@ export default function PdfMerger() {
                   </Button>
                 </div>
               </CardContent>
-            </div>
-          </div>
+            </Card>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

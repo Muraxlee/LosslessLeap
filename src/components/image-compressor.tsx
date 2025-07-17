@@ -51,7 +51,6 @@ export default function ImageCompressor() {
   };
   
   const handleReset = useCallback(() => {
-    // Revoke all existing object URLs before clearing the queue
     queueRef.current.forEach(item => {
       if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
     });
@@ -62,10 +61,8 @@ export default function ImageCompressor() {
     }
   }, []);
 
-  // Effect for component unmount cleanup
   useEffect(() => {
     return () => {
-      // Use the ref to get the latest queue state on unmount
       queueRef.current.forEach(item => {
         if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
       });
@@ -75,7 +72,6 @@ export default function ImageCompressor() {
   const handleFileChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
-    // Clear previous queue before adding new files, using the ref to ensure all URLs are revoked.
     queueRef.current.forEach(item => {
       if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
     });
@@ -160,13 +156,13 @@ export default function ImageCompressor() {
             console.error("Image compression error:", error);
             resolvePromise({ status: 'error', error: 'Compression failed.' });
         } finally {
-            URL.revokeObjectURL(img.src); // Clean up the image object URL
+            URL.revokeObjectURL(img.src);
         }
       };
       img.onerror = () => {
         console.error("Image load failed for compression:", item.originalPreview);
         resolvePromise({ status: 'error', error: 'Image load failed.' });
-        URL.revokeObjectURL(img.src); // Clean up on error too
+        URL.revokeObjectURL(img.src);
       };
       img.src = item.originalPreview;
     });
@@ -198,7 +194,7 @@ export default function ImageCompressor() {
   const handleQualityChange = (newQuality: number) => {
     setQuality(newQuality);
     if(imageQueue.length > 0){
-        setIsProcessingQueue(false); // Allow reprocessing
+        setIsProcessingQueue(false);
         setImageQueue(prev => prev.map(i => i.status === 'error' ? i : {
             ...i,
             status: 'queued',
@@ -240,12 +236,12 @@ export default function ImageCompressor() {
         onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
         className={cn("w-full max-w-lg border-2 border-dashed transition-colors mx-auto", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
       >
-        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+        <CardContent className="flex flex-col items-center justify-center p-12 text-center">
           <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="image/png, image/jpeg, image/webp" multiple />
           <UploadCloud className="mx-auto h-16 w-16 text-muted-foreground" />
           <p className="mt-4 text-lg font-semibold text-foreground">Drag & drop your images here</p>
           <p className="mt-1 text-sm text-muted-foreground">or</p>
-          <Button onClick={onBrowseClick} variant="outline" className="mt-4">
+          <Button onClick={onBrowseClick} className="mt-4">
             Browse Files
           </Button>
           <p className="mt-4 text-xs text-muted-foreground">Supports PNG, JPG, and WebP</p>
@@ -262,14 +258,14 @@ export default function ImageCompressor() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <Card>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 p-6">
-          <div className="lg:col-span-2">
-              <CardHeader className="p-0 mb-4">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
                 <CardTitle>Image Queue</CardTitle>
                 <CardDescription>{imageQueue.length} image(s) in queue. { isProcessingQueue ? 'Compressing...' : (allDone ? 'Done!' : '') }</CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent>
                 <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2">
                   {imageQueue.map(item => {
                     const reduction = item.originalSize && item.compressedSize ? ((item.originalSize - item.compressedSize) / item.originalSize) * 100 : 0;
@@ -305,64 +301,62 @@ export default function ImageCompressor() {
                   )})}
                 </div>
               </CardContent>
-          </div>
-          
-          <div>
-            <div className="sticky top-20">
-              <CardHeader className="p-0 mb-4">
-                  <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                  <div className="grid gap-4">
-                      <div className="flex items-center justify-between">
-                          <Label htmlFor="quality" className="text-base">Quality</Label>
-                          <span className="w-16 rounded-md border px-2 py-1 text-center font-mono text-sm">{quality}</span>
-                      </div>
-                      <Slider 
-                        id="quality" 
-                        value={[quality]} 
-                        min={0} max={100} step={1} 
-                        onValueChange={([val]) => setQuality(val)}
-                        onValueCommit={([val]) => handleQualityChange(val)}
-                        disabled={isProcessingQueue && !allDone}
-                      />
-                  </div>
-                  
-                  {allDone && totalCompressedSize > 0 && (
-                     <>
-                      <Separator className="my-4" />
-                      <div>
-                        <h3 className="text-lg font-semibold">Total Savings</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Original: {formatBytes(totalOriginalSize)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Compressed: {formatBytes(totalCompressedSize)}
-                        </p>
-                         <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                          Saved {totalReduction.toFixed(1)}%
-                        </p>
-                      </div>
-                     </>
-                  )}
-
-                  <Separator className="my-4" />
-
-                  <div className="flex flex-col gap-3">
-                      <Button onClick={handleDownloadAll} size="lg" disabled={!anyDone || isProcessingQueue}>
-                          <Download />
-                          Download All
-                      </Button>
-                      <Button onClick={handleReset} variant="outline" size="lg">
-                          <X className="mr-2 h-5 w-5" />
-                          Clear & Start Over
-                      </Button>
-                  </div>
-              </CardContent>
-            </div>
-          </div>
+            </Card>
         </div>
-      </Card>
+        
+        <div className="sticky top-20 self-start">
+          <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="grid gap-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="quality" className="text-base">Quality</Label>
+                        <span className="w-16 rounded-md border px-2 py-1 text-center font-mono text-sm">{quality}</span>
+                    </div>
+                    <Slider 
+                      id="quality" 
+                      value={[quality]} 
+                      min={0} max={100} step={1} 
+                      onValueChange={([val]) => setQuality(val)}
+                      onValueCommit={([val]) => handleQualityChange(val)}
+                      disabled={isProcessingQueue && !allDone}
+                    />
+                </div>
+                
+                {allDone && totalCompressedSize > 0 && (
+                   <>
+                    <Separator className="my-6" />
+                    <div>
+                      <h3 className="text-lg font-semibold">Total Savings</h3>
+                      <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                        <p>Original: <span className="font-medium text-foreground">{formatBytes(totalOriginalSize)}</span></p>
+                        <p>Compressed: <span className="font-medium text-foreground">{formatBytes(totalCompressedSize)}</span></p>
+                      </div>
+                       <p className="mt-2 text-xl font-bold text-green-600 dark:text-green-400">
+                        Saved {totalReduction.toFixed(1)}%
+                      </p>
+                    </div>
+                   </>
+                )}
+
+                <Separator className="my-6" />
+
+                <div className="flex flex-col gap-3">
+                    <Button onClick={handleDownloadAll} size="lg" disabled={!anyDone || isProcessingQueue}>
+                        <Download />
+                        Download All
+                    </Button>
+                    <Button onClick={handleReset} variant="outline" size="lg">
+                        <X className="mr-2 h-5 w-5" />
+                        Clear & Start Over
+                    </Button>
+                </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

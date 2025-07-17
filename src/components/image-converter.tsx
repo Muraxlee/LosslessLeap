@@ -129,7 +129,6 @@ export default function ImageConverter() {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error("Could not get canvas context");
 
-      // For formats that don't support transparency (like JPEG), fill with white
       if (format === 'jpeg') {
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -220,12 +219,12 @@ export default function ImageConverter() {
         onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
         className={cn("w-full max-w-lg border-2 border-dashed transition-colors mx-auto", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
       >
-        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+        <CardContent className="flex flex-col items-center justify-center p-12 text-center">
           <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="image/png, image/jpeg, image/webp" multiple />
           <UploadCloud className="mx-auto h-16 w-16 text-muted-foreground" />
           <p className="mt-4 text-lg font-semibold text-foreground">Drag & drop your images here</p>
           <p className="mt-1 text-sm text-muted-foreground">or</p>
-          <Button onClick={onBrowseClick} variant="outline" className="mt-4">Browse Files</Button>
+          <Button onClick={onBrowseClick} className="mt-4">Browse Files</Button>
           <p className="mt-4 text-xs text-muted-foreground">Supports PNG, JPG, and WebP</p>
         </CardContent>
       </Card>
@@ -237,52 +236,53 @@ export default function ImageConverter() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <Card>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 p-6">
-          <div className="lg:col-span-2">
-            <CardHeader className="p-0 mb-4">
-              <CardTitle>Image Queue</CardTitle>
-              <CardDescription>{imageQueue.length} image(s) to convert. { isProcessingQueue ? 'Converting...' : (allDone ? 'Done!' : '') }</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2">
-                {imageQueue.map(item => (
-                  <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3">
-                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                      <NextImage src={item.originalPreview} alt={item.originalFile.name} fill className="object-cover" />
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Image Queue</CardTitle>
+                <CardDescription>{imageQueue.length} image(s) to convert. { isProcessingQueue ? 'Converting...' : (allDone ? 'Done!' : '') }</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                  {imageQueue.map(item => (
+                    <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3">
+                      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                        <NextImage src={item.originalPreview} alt={item.originalFile.name} fill className="object-cover" />
+                      </div>
+                      <div className="flex-grow overflow-hidden">
+                        <p className="truncate font-medium text-foreground">{item.originalFile.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatBytes(item.originalSize)}
+                          {item.convertedSize !== null && ` → ${formatBytes(item.convertedSize)}`}
+                        </p>
+                      </div>
+                      <div className="flex w-32 flex-shrink-0 items-center justify-end gap-2">
+                          {item.status === 'converting' && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                          {item.status === 'done' && (
+                            <Button size="icon" variant="ghost" onClick={() => handleDownload(item)} aria-label="Download image"><Download className="h-5 w-5"/></Button>
+                          )}
+                           {item.status === 'error' && (
+                            <div className="flex items-center gap-2 text-destructive">
+                                <XCircle className="h-6 w-6" />
+                                <span className="text-sm">Failed</span>
+                            </div>
+                           )}
+                          {item.status === 'queued' && <span className="text-sm text-muted-foreground">Queued</span>}
+                      </div>
                     </div>
-                    <div className="flex-grow overflow-hidden">
-                      <p className="truncate font-medium text-foreground">{item.originalFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatBytes(item.originalSize)}
-                        {item.convertedSize !== null && ` → ${formatBytes(item.convertedSize)}`}
-                      </p>
-                    </div>
-                    <div className="flex w-32 flex-shrink-0 items-center justify-end gap-2">
-                        {item.status === 'converting' && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
-                        {item.status === 'done' && (
-                          <Button size="icon" variant="ghost" onClick={() => handleDownload(item)} aria-label="Download image"><Download className="h-5 w-5"/></Button>
-                        )}
-                         {item.status === 'error' && (
-                          <div className="flex items-center gap-2 text-destructive">
-                              <XCircle className="h-6 w-6" />
-                              <span className="text-sm">Failed</span>
-                          </div>
-                         )}
-                        {item.status === 'queued' && <span className="text-sm text-muted-foreground">Queued</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </div>
-          
-          <div>
-            <div className="sticky top-20">
-              <CardHeader className="p-0 mb-4">
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+        </div>
+        
+        <div className="sticky top-20 self-start">
+            <Card>
+              <CardHeader>
                   <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Settings</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent>
                   <div className="grid gap-4">
                       <div className="space-y-2">
                           <Label htmlFor="format" className="text-base">Output Format</Label>
@@ -299,7 +299,7 @@ export default function ImageConverter() {
                       </div>
                   </div>
                   
-                  <Separator className="my-4" />
+                  <Separator className="my-6" />
 
                   <div className="flex flex-col gap-3">
                       <Button onClick={handleDownloadAll} size="lg" disabled={!anyDone || isProcessingQueue}>
@@ -312,10 +312,9 @@ export default function ImageConverter() {
                       </Button>
                   </div>
               </CardContent>
-            </div>
-          </div>
+            </Card>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

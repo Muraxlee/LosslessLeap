@@ -18,6 +18,27 @@ const navLinks = [
   { href: '/pdf-merger', label: 'Merge & Edit PDF', icon: Combine },
 ];
 
+const Logo = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-7 w-7 text-primary"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+      <path d="m17 10-2.5-2.5" />
+      <path d="m7 10 2.5-2.5" />
+    </svg>
+)
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,28 +51,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased flex flex-col min-h-screen">
+      <body className="font-body antialiased flex flex-col min-h-screen bg-background">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center">
             <Link href="/" className="mr-6 flex items-center gap-3">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-7 w-7 text-primary"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-                <path d="m17 10-2.5-2.5" />
-                <path d="m7 10 2.5-2.5" />
-              </svg>
+              <Logo />
               <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
             </Link>
             
@@ -73,24 +77,7 @@ export default function RootLayout({
                 </SheetTrigger>
                 <SheetContent side="left">
                    <Link href="/" className="mr-6 flex items-center gap-3 mb-6">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-7 w-7 text-primary"
-                      >
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                        <path d="m17 10-2.5-2.5" />
-                        <path d="m7 10 2.5-2.5" />
-                      </svg>
+                      <Logo />
                       <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
                     </Link>
                   <nav className="flex flex-col gap-2">
