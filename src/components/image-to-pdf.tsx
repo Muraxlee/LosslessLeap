@@ -42,7 +42,6 @@ export default function ImageToPdf() {
   queueRef.current = imageQueue;
   
   const dragItemRef = useRef<number | null>(null);
-  const dragOverItemRef = useRef<number | null>(null);
 
   const { toast } = useToast();
 
@@ -163,28 +162,46 @@ export default function ImageToPdf() {
     }
   };
 
-  const handleDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); if (e.type === "dragenter" || e.type === "dragover") setIsDragActive(true); else if (e.type === "dragleave") setIsDragActive(false); };
-  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); if (e.dataTransfer.files) handleFileChange(e.dataTransfer.files); };
+  const handleGlobalDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); if (e.type === "dragenter" || e.type === "dragover") setIsDragActive(true); else if (e.type === "dragleave") setIsDragActive(false); };
+  const handleGlobalDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); if (e.dataTransfer.files) handleFileChange(e.dataTransfer.files); };
   const onBrowseClick = () => { inputRef.current?.click(); };
   
-  const handleDragStart = (e: ReactDragEvent, index: number) => { dragItemRef.current = index; };
-  const handleDragEnter = (e: ReactDragEvent, index: number) => { dragOverItemRef.current = index; };
-  const handleDragEnd = () => {
-    if (dragItemRef.current !== null && dragOverItemRef.current !== null) {
-      const newQueue = [...imageQueue];
-      const dragItem = newQueue.splice(dragItemRef.current, 1)[0];
-      newQueue.splice(dragOverItemRef.current, 0, dragItem);
-      setImageQueue(newQueue);
+  const handleDragStart = (e: ReactDragEvent, index: number) => {
+    dragItemRef.current = index;
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: ReactDragEvent, index: number) => {
+    e.preventDefault();
+    const draggedOverItem = e.currentTarget as HTMLDivElement;
+    draggedOverItem.style.border = "2px dashed #64B5CD"; // Or use a class
+  };
+
+  const handleDragLeave = (e: ReactDragEvent) => {
+    const draggedOverItem = e.currentTarget as HTMLDivElement;
+    draggedOverItem.style.border = ""; // Reset style
+  };
+
+  const handleDrop = (e: ReactDragEvent, index: number) => {
+    e.preventDefault();
+    const draggedOverItem = e.currentTarget as HTMLDivElement;
+    draggedOverItem.style.border = ""; // Reset style
+
+    if (dragItemRef.current === null) return;
+    
+    if (dragItemRef.current !== index) {
+        const newQueue = [...imageQueue];
+        const dragItemContent = newQueue.splice(dragItemRef.current, 1)[0];
+        newQueue.splice(index, 0, dragItemContent);
+        setImageQueue(newQueue);
     }
     dragItemRef.current = null;
-    dragOverItemRef.current = null;
   };
-  const handleDragOver = (e: ReactDragEvent) => e.preventDefault();
 
   if (imageQueue.length === 0) {
     return (
       <Card
-        onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
+        onDragEnter={handleGlobalDrag} onDragLeave={handleGlobalDrag} onDragOver={handleGlobalDrag} onDrop={handleGlobalDrop}
         className={cn("w-full max-w-lg border-2 border-dashed transition-colors mx-auto", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
       >
         <CardContent className="flex flex-col items-center justify-center p-12 text-center">
@@ -209,15 +226,16 @@ export default function ImageToPdf() {
                     <CardDescription>Drag to reorder images, then click "Create PDF".</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" onDragOver={handleDragOver}>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {imageQueue.map((item, index) => (
                             <div 
                                 key={item.id} 
-                                className="relative group aspect-square cursor-grab rounded-lg overflow-hidden border"
+                                className="relative group aspect-square cursor-grab rounded-lg overflow-hidden border transition-all"
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, index)}
-                                onDragEnter={(e) => handleDragEnter(e, index)}
-                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => handleDragOver(e, index)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, index)}
                             >
                                 <NextImage src={item.preview} alt={item.file.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -232,7 +250,7 @@ export default function ImageToPdf() {
                         ))}
                         <Card 
                             onClick={onBrowseClick}
-                            onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
+                            onDragEnter={handleGlobalDrag} onDragLeave={handleGlobalDrag} onDragOver={handleGlobalDrag} onDrop={handleGlobalDrop}
                             className={cn("w-full aspect-square border-2 border-dashed transition-colors flex items-center justify-center cursor-pointer", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
                         >
                              <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="image/png, image/jpeg" multiple />
