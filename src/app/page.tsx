@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
-import { ArrowRightLeft, Minimize, FileImage, Combine, Lock } from 'lucide-react';
+import { ArrowRightLeft, Minimize, FileImage, Combine, Lock, FileDown } from 'lucide-react';
 
 const tools = [
   {
@@ -20,6 +20,12 @@ const tools = [
     description: 'Combine multiple images into a single, easy-to-share PDF document.',
     href: '/image-to-pdf',
     icon: FileImage,
+  },
+   {
+    title: 'Compress PDF',
+    description: 'Reduce the file size of your PDFs while maintaining quality.',
+    href: '/compress-pdf',
+    icon: FileDown,
   },
   {
     title: 'Merge & Edit PDF',
