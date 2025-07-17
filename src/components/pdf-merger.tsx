@@ -242,6 +242,9 @@ export default function PdfMerger() {
                                 <X className="h-5 w-5"/>
                               </Button>
                             </div>
+                             <div className="absolute top-1 left-1 z-20 bg-primary text-primary-foreground text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                                {index + 1}
+                             </div>
                              <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-md">
                                <p className="text-xs text-white truncate w-full text-center" title={page.pdfName}>{page.pdfName} - {page.originalPageIndex + 1}</p>
                              </div>
