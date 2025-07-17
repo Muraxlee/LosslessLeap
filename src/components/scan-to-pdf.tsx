@@ -24,10 +24,8 @@ const ScanIllustration = () => (
         <path d="M47.4619 86.6666C54.0019 86.6666 59.3567 81.3118 59.3567 74.7718C59.3567 68.2318 54.0019 62.877 47.4619 62.877C40.9219 62.877 35.5671 68.2318 35.5671 74.7718C35.5671 81.3118 40.9219 86.6666 47.4619 86.6666Z" stroke="currentColor" strokeWidth="2"/>
         <mask id="mask0_803_2" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="79" y="50" width="100" height="50">
             <path d="M79.522 75L179.043 50.4782V100.478L79.522 75Z" fill="#D9D9D9"/>
-        </g>
+        </mask>
         <g mask="url(#mask0_803_2)">
-            <path d="M79.522 75L179.043 50.4782V100.478L79.522 75Z" fill="hsl(var(--primary) / 0.1)"/>
-            <path d="M129.282 62.7391L79.5215 75L129.282 87.7391L179.043 100.478V50.4782L129.282 62.7391Z" fill="hsl(var(--primary) / 0.2)"/>
         </g>
         <rect x="184.28" y="47" width="46.8511" height="90" rx="6" stroke="currentColor" strokeWidth="2"/>
         <path d="M189.232 54.2174H226.178" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -154,7 +152,7 @@ export default function ScanToPdf() {
       a.href = url;
       a.download = `scanned-document.pdf`;
       document.body.appendChild(a);
-a.click();
+      a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
