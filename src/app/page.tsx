@@ -30,16 +30,16 @@ export default function Home() {
       <main className="flex flex-1 flex-col items-center justify-center p-4 text-center sm:p-6 md:p-8">
         <div className="mb-8 max-w-2xl">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
-            Free & Private Image Tools
+            Free & Private Image and PDF Tools
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Quickly compress or convert your JPG, PNG, and WebP images online. Everything happens in your browser, so your files are never uploaded to a server.
+            Quickly compress images, convert formats, or edit PDF files. Everything happens in your browser, so your files are never uploaded to a server.
           </p>
         </div>
         <ImageTools />
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground">
-        Your images stay on your device. Always.
+        Your files stay on your device. Always.
       </footer>
     </div>
   );

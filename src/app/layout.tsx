@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'LosslessLeap - Free & Private Image Compression',
-  description: 'Compress JPG, PNG, and WebP images for free without a server. Fast, private, and easy to use.',
+  title: 'LosslessLeap - Free & Private Image & PDF Tools',
+  description: 'Compress, convert images, and edit PDFs for free without a server. Fast, private, and easy to use.',
 };
 
 export default function RootLayout({

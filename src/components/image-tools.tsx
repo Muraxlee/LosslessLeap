@@ -4,8 +4,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImageCompressor from "@/components/image-compressor";
 import ImageConverter from "@/components/image-converter";
-import { ArrowRightLeft, Minimize, FileImage } from "lucide-react";
-import ImageToPdf from "./image-to-pdf";
+import { ArrowRightLeft, Minimize, FileText } from "lucide-react";
+import PdfTools from "./pdf-tools";
 
 export default function ImageTools() {
   return (
@@ -21,7 +21,7 @@ export default function ImageTools() {
             Converter
           </TabsTrigger>
           <TabsTrigger value="pdf-tools">
-            <FileImage className="mr-2" />
+            <FileText className="mr-2" />
             PDF Tools
           </TabsTrigger>
         </TabsList>
@@ -33,7 +33,7 @@ export default function ImageTools() {
         <ImageConverter />
       </TabsContent>
       <TabsContent value="pdf-tools">
-        <ImageToPdf />
+        <PdfTools />
       </TabsContent>
     </Tabs>
   );
