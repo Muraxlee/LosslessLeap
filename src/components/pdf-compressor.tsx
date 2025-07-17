@@ -9,7 +9,8 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { PDFDocument, PDFName } from 'pdf-lib';
+import { PDFDocument, PDFImage, PDFName } from 'pdf-lib';
+import imageCompression from 'browser-image-compression';
 import { Separator } from '@/components/ui/separator';
 
 interface ProcessedFile {
@@ -23,7 +24,7 @@ interface ProcessedFile {
 
 export default function PdfCompressor() {
   const [processedFile, setProcessedFile] = useState<ProcessedFile | null>(null);
-  const [quality, setQuality] = useState(0.7); // Corresponds to 70%
+  const [quality, setQuality] = useState(75); // Corresponds to 75%
   const [isDragActive, setIsDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -64,6 +65,20 @@ export default function PdfCompressor() {
     });
   };
 
+  const compressPdfImage = async (image: PDFImage, quality: number): Promise<Uint8Array> => {
+    const imageBytes = await image.embed();
+    const file = new Blob([imageBytes]);
+    const compressedFile = await imageCompression(file as File, {
+      maxSizeMB: Infinity,
+      maxWidthOrHeight: image.width,
+      useWebWorker: true,
+      initialQuality: quality / 100,
+      fileType: 'image/jpeg',
+    });
+    return new Uint8Array(await compressedFile.arrayBuffer());
+  };
+
+
   const handleCompress = useCallback(async () => {
     if (!processedFile) return;
 
@@ -72,54 +87,50 @@ export default function PdfCompressor() {
     try {
       const existingPdfBytes = await processedFile.originalFile.arrayBuffer();
       const pdfDoc = await PDFDocument.load(existingPdfBytes, { 
-        // Some PDFs have issues with this, so we disable it.
         updateMetadata: false 
       });
-      const imageObjects = pdfDoc.context.indirectObjects.entries()
-        .filter(([, obj]) => obj.dict?.get(PDFName.of('Subtype')) === PDFName.of('Image'));
 
-      for (const [ref, image] of imageObjects) {
+      const processedRefs = new Set();
+
+      for (const page of pdfDoc.getPages()) {
+        const imageNames = page.node.Resources?.XObject?.keys() ?? [];
+        
+        for (const name of imageNames) {
+          const xobject = page.node.Resources!.XObject!.lookup(name);
+          if(xobject.get(PDFName.of('Subtype')) !== PDFName.of('Image')) continue;
+
+          const ref = xobject.ref;
+          if (processedRefs.has(ref.toString())) continue;
+
           try {
-            const {width, height, bitsPerComponent} = image.dict.dict;
+            const image = await pdfDoc.embedJpg(await (pdfDoc.getForm().getButton(name.decodeText())).acroField.getImage());
+            const compressedImageBytes = await compressPdfImage(image, quality);
+            const compressedImage = await pdfDoc.embedJpg(compressedImageBytes);
+            page.drawImage(compressedImage, {
+               x: page.getWidth() / 2 - compressedImage.width / 2,
+               y: page.getHeight() / 2 - compressedImage.height / 2,
+            });
             
-            // This logic is complex. We'll simplify and only handle JPEGs for now.
-            // A full implementation would need to handle PNGs, etc.
-            const smaskRef = image.dict.get(PDFName.of('SMask'));
-            if (smaskRef) {
-                // transparency masks are too complex to handle reliably client-side. Skip.
-                continue;
-            }
-
-            const imageStream = image.dict.get(PDFName.of('Filter')) === PDFName.of('DCTDecode') ? image : null;
-            if (!imageStream) continue; // Skip non-JPEG images for simplicity
-
-            const imageBytes = imageStream.getContents();
-            if(!imageBytes || imageBytes.length === 0) continue;
-
-            // Re-embed the image with new compression
-            const newImage = await pdfDoc.embedJpg(imageBytes);
-            
-            const imageXObject = pdfDoc.context.stream(newImage.jpgData, {
+            const imageXObject = pdfDoc.context.stream(compressedImage.jpgData, {
                 Type: 'XObject',
                 Subtype: 'Image',
-                Width: newImage.width,
-                Height: newImage.height,
+                Width: compressedImage.width,
+                Height: compressedImage.height,
                 ColorSpace: PDFName.of('DeviceRGB'),
                 BitsPerComponent: 8,
                 Filter: PDFName.of('DCTDecode'),
             });
-            
-            // This is a simplified replacement. A robust solution is much more complex.
-            // We're replacing the image object directly.
-            pdfDoc.context.assign(ref, imageXObject);
+            page.node.set(PDFName.of(name.decodeText()), imageXObject);
 
           } catch (e) {
             console.warn("Could not process an image in the PDF, skipping it.", e);
             continue;
           }
+          processedRefs.add(ref.toString());
+        }
       }
 
-      const compressedPdfBytes = await pdfDoc.save({ useObjectStreams: false });
+      const compressedPdfBytes = await pdfDoc.save();
       const blob = new Blob([compressedPdfBytes], { type: 'application/pdf' });
       
       setProcessedFile(prev => prev ? {
@@ -200,13 +211,13 @@ a.href = url;
                 <div className="space-y-2">
                    <div className="flex items-center justify-between">
                         <Label htmlFor="quality" className="text-base">Image Quality</Label>
-                        <span className="w-16 rounded-md border px-2 py-1 text-center font-mono text-sm">{(quality * 100).toFixed(0)}</span>
+                        <span className="w-16 rounded-md border px-2 py-1 text-center font-mono text-sm">{quality}</span>
                     </div>
                     <Slider 
                         id="quality" 
-                        value={[quality * 100]} 
-                        min={10} max={90} step={10} 
-                        onValueChange={([val]) => setQuality(val/100)}
+                        value={[quality]} 
+                        min={10} max={100} step={1} 
+                        onValueChange={([val]) => setQuality(val)}
                         disabled={processedFile.status === 'compressing'}
                     />
                     <p className="text-sm text-muted-foreground">Lower quality means smaller file size. Affects images inside the PDF.</p>
