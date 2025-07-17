@@ -1,32 +1,38 @@
+
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { UploadCloud, FileImage, Loader2, Download, X, Sparkles } from 'lucide-react';
+import { UploadCloud, FileImage, Loader2, Download, X, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 interface ImageDimensions {
   width: number;
   height: number;
 }
 
+interface ImageQueueItem {
+  id: string;
+  originalFile: File;
+  originalPreview: string;
+  originalSize: number;
+  imageDimensions: ImageDimensions | null;
+  compressedBlob: Blob | null;
+  compressedSize: number | null;
+  status: 'queued' | 'compressing' | 'done' | 'error';
+  error?: string;
+}
+
 export default function ImageCompressor() {
-  const [originalFile, setOriginalFile] = useState<File | null>(null);
-  const [originalPreview, setOriginalPreview] = useState<string | null>(null);
-  const [originalSize, setOriginalSize] = useState<number | null>(null);
-  const [imageDimensions, setImageDimensions] = useState<ImageDimensions | null>(null);
-
-  const [compressedBlob, setCompressedBlob] = useState<Blob | null>(null);
-  const [compressedPreview, setCompressedPreview] = useState<string | null>(null);
-  const [compressedSize, setCompressedSize] = useState<number | null>(null);
-
+  const [imageQueue, setImageQueue] = useState<ImageQueueItem[]>([]);
   const [quality, setQuality] = useState(75);
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -42,112 +48,127 @@ export default function ImageCompressor() {
   };
 
   const handleReset = useCallback(() => {
-    setOriginalFile(null);
-    setOriginalPreview(null);
-    setOriginalSize(null);
-    setImageDimensions(null);
-    setCompressedBlob(null);
-    setCompressedPreview(null);
-    setCompressedSize(null);
-    setIsCompressing(false);
+    // Revoke all object URLs
+    imageQueue.forEach(item => {
+      if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
+      if (item.compressedBlob) URL.revokeObjectURL(URL.createObjectURL(item.compressedBlob));
+    });
+    setImageQueue([]);
+    setIsProcessingQueue(false);
     setQuality(75);
     if (inputRef.current) {
       inputRef.current.value = "";
     }
-  }, []);
+  }, [imageQueue]);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
       handleReset();
-      setOriginalFile(file);
-      setOriginalSize(file.size);
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-          const img = document.createElement('img');
-          img.onload = () => {
-              setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-          };
-          img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+      const newItems: ImageQueueItem[] = [];
+      for (const file of Array.from(files)) {
+        if (file.type.startsWith('image/')) {
+          const id = `${file.name}-${file.lastModified}`;
+          const originalPreview = URL.createObjectURL(file);
+          const imageDimensions = await new Promise<ImageDimensions | null>((resolve) => {
+            const img = document.createElement('img');
+            img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+            img.onerror = () => resolve(null);
+            img.src = originalPreview;
+          });
 
-      const previewUrl = URL.createObjectURL(file);
-      setOriginalPreview(previewUrl);
-
-    } else if (file) {
-      toast({
-        variant: "destructive",
-        title: "Invalid file type",
-        description: "Please upload a valid image file (PNG, JPG, WebP).",
-      });
+          if (imageDimensions) {
+            newItems.push({
+              id,
+              originalFile: file,
+              originalPreview,
+              originalSize: file.size,
+              imageDimensions,
+              compressedBlob: null,
+              compressedSize: null,
+              status: 'queued',
+            });
+          } else {
+            URL.revokeObjectURL(originalPreview); // Clean up if dimension reading fails
+          }
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Invalid file type",
+            description: `Skipped non-image file: ${file.name}`,
+          });
+        }
+      }
+      setImageQueue(newItems);
     }
   }, [handleReset, toast]);
 
-  const compressImage = useCallback(async () => {
-    if (!originalFile || !imageDimensions) return;
+  const compressImage = useCallback(async (item: ImageQueueItem, compressionQuality: number): Promise<Partial<ImageQueueItem>> => {
+      if (!item.originalFile || !item.imageDimensions) {
+        return { status: 'error', error: 'Missing file or dimensions.' };
+      }
 
-    setIsCompressing(true);
-    setCompressedBlob(null);
-    setCompressedPreview(null);
-    setCompressedSize(null);
+      const img = document.createElement('img');
+      const promise = new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+      });
+      img.src = item.originalPreview;
 
-    const img = document.createElement('img');
-    const promise = new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-    });
-    const previewUrl = URL.createObjectURL(originalFile);
-    img.src = previewUrl;
+      try {
+          await promise;
 
-    try {
-        await promise;
-        URL.revokeObjectURL(previewUrl);
+          const canvas = document.createElement('canvas');
+          canvas.width = item.imageDimensions.width;
+          canvas.height = item.imageDimensions.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error("Could not get canvas context");
+          ctx.drawImage(img, 0, 0, item.imageDimensions.width, item.imageDimensions.height);
 
-        const canvas = document.createElement('canvas');
-        canvas.width = imageDimensions.width;
-        canvas.height = imageDimensions.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error("Could not get canvas context");
-        ctx.drawImage(img, 0, 0);
+          const blob = await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob(resolve, 'image/jpeg', compressionQuality / 100);
+          });
+          
+          if (blob) {
+            return {
+              compressedBlob: blob,
+              compressedSize: blob.size,
+              status: 'done'
+            };
+          } else {
+            return { status: 'error', error: 'Canvas toBlob failed.' };
+          }
+      } catch (error) {
+          console.error("Image compression error:", error);
+          return { status: 'error', error: 'Compression failed.' };
+      }
+  }, []);
 
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              setCompressedBlob(blob);
-              setCompressedSize(blob.size);
-              setCompressedPreview(URL.createObjectURL(blob));
-            }
-            setIsCompressing(false);
-          },
-          'image/jpeg',
-          quality / 100
-        );
-    } catch (error) {
-        console.error("Image compression error:", error);
-        toast({
-            variant: "destructive",
-            title: "Compression Failed",
-            description: "Something went wrong while compressing the image.",
-        });
-        setIsCompressing(false);
+  const processQueue = useCallback(async () => {
+    setIsProcessingQueue(true);
+    for (const item of imageQueue) {
+      if(item.status !== 'queued') continue;
+
+      setImageQueue(prev => prev.map(i => i.id === item.id ? { ...i, status: 'compressing' } : i));
+      const result = await compressImage(item, quality);
+      setImageQueue(prev => prev.map(i => i.id === item.id ? { ...i, ...result } : i));
     }
-  }, [originalFile, imageDimensions, quality, toast]);
+    setIsProcessingQueue(false);
+  }, [imageQueue, quality, compressImage]);
 
   useEffect(() => {
-    if (originalFile && imageDimensions) {
-      const timer = setTimeout(() => compressImage(), 500);
+    if (imageQueue.length > 0 && imageQueue.some(i => i.status === 'queued')) {
+      const timer = setTimeout(() => processQueue(), 500);
       return () => clearTimeout(timer);
     }
-  }, [originalFile, imageDimensions, quality, compressImage]);
+  }, [imageQueue, quality, processQueue]);
 
-  const handleDownload = () => {
-    if (!compressedBlob) return;
-    const url = URL.createObjectURL(compressedBlob);
+  const handleDownload = (item: ImageQueueItem) => {
+    if (!item.compressedBlob) return;
+    const url = URL.createObjectURL(item.compressedBlob);
     const a = document.createElement('a');
     a.href = url;
-    const originalName = originalFile?.name.split('.').slice(0, -1).join('.') || 'compressed';
+    const originalName = item.originalFile.name.split('.').slice(0, -1).join('.') || 'compressed';
     a.download = `${originalName}-compressed.jpg`;
     document.body.appendChild(a);
     a.click();
@@ -156,26 +177,32 @@ export default function ImageCompressor() {
   };
   
   useEffect(() => {
+    // This effect ensures that object URLs are revoked when the component unmounts.
     return () => {
-      if (originalPreview) URL.revokeObjectURL(originalPreview);
-      if (compressedPreview) URL.revokeObjectURL(compressedPreview);
+      imageQueue.forEach(item => {
+        if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
+        if (item.compressedBlob) {
+            const url = URL.createObjectURL(item.compressedBlob);
+            URL.revokeObjectURL(url);
+        }
+      });
     }
-  }, [originalPreview, compressedPreview]);
+  }, [imageQueue]);
 
   const handleDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); if (e.type === "dragenter" || e.type === "dragover") setIsDragActive(true); else if (e.type === "dragleave") setIsDragActive(false); };
   const handleDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); if (e.dataTransfer.files && e.dataTransfer.files[0]) { handleFileChange({ target: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>); } };
   const onBrowseClick = () => { inputRef.current?.click(); };
 
-  if (!originalFile) {
+  if (imageQueue.length === 0) {
     return (
       <Card
         onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
         className={cn("w-full max-w-lg border-2 border-dashed transition-colors", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
       >
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-          <input ref={inputRef} type="file" onChange={handleFileChange} className="hidden" accept="image/png, image/jpeg, image/webp" />
+          <input ref={inputRef} type="file" onChange={handleFileChange} className="hidden" accept="image/png, image/jpeg, image/webp" multiple />
           <UploadCloud className="mx-auto h-16 w-16 text-muted-foreground" />
-          <p className="mt-4 text-lg font-semibold text-foreground">Drag & drop an image here</p>
+          <p className="mt-4 text-lg font-semibold text-foreground">Drag & drop your images here</p>
           <p className="mt-1 text-sm text-muted-foreground">or</p>
           <Button onClick={onBrowseClick} variant="outline" className="mt-4">
             Browse Files
@@ -185,88 +212,108 @@ export default function ImageCompressor() {
       </Card>
     );
   }
-
-  const reduction = originalSize && compressedSize ? ((originalSize - compressedSize) / originalSize) * 100 : 0;
+  
+  const totalOriginalSize = imageQueue.reduce((acc, item) => acc + item.originalSize, 0);
+  const totalCompressedSize = imageQueue.reduce((acc, item) => acc + (item.compressedSize ?? 0), 0);
+  const totalReduction = totalOriginalSize > 0 ? ((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100 : 0;
+  const allDone = imageQueue.every(i => i.status === 'done' || i.status === 'error');
 
   return (
     <div className="w-full max-w-7xl">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card className="overflow-hidden">
-                <CardHeader><CardTitle>Original</CardTitle></CardHeader>
-                <CardContent>
-                    <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
-                      {originalPreview && imageDimensions && <Image src={originalPreview} alt="Original image preview" width={imageDimensions.width} height={imageDimensions.height} className="h-full w-full object-contain" />}
-                    </div>
-                    <div className="mt-4 flex justify-between text-sm">
-                        <p className="max-w-[70%] truncate font-medium text-foreground">{originalFile.name}</p>
-                        <p className="font-mono text-muted-foreground">{formatBytes(originalSize ?? 0)}</p>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                        <span>Compressed</span>
-                        {reduction > 0 && (
-                            <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                                -{reduction.toFixed(1)}%
-                            </span>
-                        )}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
-                        {isCompressing && (
-                            <div className="flex h-full w-full items-center justify-center">
-                                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                            </div>
-                        )}
-                        {!isCompressing && compressedPreview && imageDimensions && (
-                            <Image src={compressedPreview} alt="Compressed image preview" width={imageDimensions.width} height={imageDimensions.height} className="h-full w-full object-contain" />
-                        )}
-                        {!isCompressing && !compressedPreview && (
-                            <div className="flex h-full w-full flex-col items-center justify-center text-muted-foreground">
-                                <FileImage className="h-12 w-12" />
-                                <p className="mt-2 text-sm">Compressed preview</p>
-                            </div>
-                        )}
-                    </div>
-                    <div className="mt-4 flex justify-between text-sm">
-                        <p className="max-w-[70%] truncate font-medium text-foreground">
-                            {originalFile?.name.split('.').slice(0, -1).join('.') || 'compressed'}.jpg
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Image Queue</CardTitle>
+                <CardDescription>{imageQueue.length} image(s) ready for compression.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-4 max-h-[50vh] overflow-y-auto pr-2">
+                  {imageQueue.map(item => {
+                    const reduction = item.originalSize && item.compressedSize ? ((item.originalSize - item.compressedSize) / item.originalSize) * 100 : 0;
+                    return (
+                    <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3">
+                      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                        <Image src={item.originalPreview} alt={item.originalFile.name} layout="fill" className="object-cover" />
+                      </div>
+                      <div className="flex-grow overflow-hidden">
+                        <p className="truncate font-medium text-foreground">{item.originalFile.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatBytes(item.originalSize)}
+                          {item.compressedSize !== null && ` → ${formatBytes(item.compressedSize)}`}
                         </p>
-                        <p className="font-mono text-muted-foreground">{formatBytes(compressedSize ?? 0)}</p>
+                      </div>
+                      <div className="flex flex-shrink-0 items-center gap-4">
+                          {item.status === 'compressing' && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                          {item.status === 'done' && (
+                            <>
+                              <span className="text-sm font-medium text-green-600 dark:text-green-400">-{reduction.toFixed(1)}%</span>
+                              <Button size="sm" variant="ghost" onClick={() => handleDownload(item)}><Download className="h-5 w-5"/></Button>
+                            </>
+                          )}
+                          {item.status === 'error' && <XCircle className="h-6 w-6 text-destructive" />}
+                          {item.status === 'queued' && <span className="text-sm text-muted-foreground">Queued</span>}
+                      </div>
                     </div>
-                </CardContent>
+                  )})}
+                </div>
+              </CardContent>
             </Card>
-        </div>
+          </div>
+          
+          <div>
+            <Card className="sticky top-20">
+              <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <div className="grid gap-4">
+                      <div className="flex items-center justify-between">
+                          <Label htmlFor="quality" className="text-base">Quality</Label>
+                          <span className="w-16 rounded-md border px-2 py-1 text-center font-mono text-sm">{quality}</span>
+                      </div>
+                      <Slider 
+                        id="quality" 
+                        value={[quality]} 
+                        min={0} max={100} step={1} 
+                        onValueChange={(value) => setQuality(value[0])}
+                        onValueCommit={() => {
+                          // Re-process queue with new quality
+                          setImageQueue(prev => prev.map(i => ({...i, status: 'queued', compressedBlob: null, compressedSize: null, error: undefined})));
+                        }}
+                        disabled={isProcessingQueue}
+                      />
+                  </div>
+                  
+                  {allDone && totalCompressedSize > 0 && (
+                     <>
+                      <Separator className="my-4" />
+                      <div>
+                        <h3 className="font-medium">Total Savings</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Compressed from {formatBytes(totalOriginalSize)} to {formatBytes(totalCompressedSize)}.
+                        </p>
+                         <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                          Saved {totalReduction.toFixed(1)}%
+                        </p>
+                      </div>
+                     </>
+                  )}
 
-        <Card className="mt-6">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Compression Settings</CardTitle>
-                <CardDescription>Adjust the quality to find the right balance between file size and image clarity.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid gap-4">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="quality" className="text-base">Quality</Label>
-                        <span className="w-16 rounded-md border px-2 py-1 text-center font-mono text-sm">{quality}</span>
-                    </div>
-                    <Slider id="quality" defaultValue={[quality]} min={0} max={100} step={1} onValueChange={(value) => setQuality(value[0])} />
-                </div>
-                <div className="mt-6 flex flex-wrap justify-center gap-4">
-                    <Button onClick={handleDownload} disabled={!compressedBlob || isCompressing} size="lg">
-                        <Download className="mr-2 h-5 w-5" />
-                        Download
-                    </Button>
-                    <Button onClick={handleReset} variant="outline" size="lg">
-                        <X className="mr-2 h-5 w-5" />
-                        Compress Another
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+                  <Separator className="my-4" />
+
+                  <div className="flex flex-wrap justify-center gap-4">
+                      <Button onClick={handleReset} variant="outline" size="lg">
+                          <X className="mr-2 h-5 w-5" />
+                          Clear Queue
+                      </Button>
+                  </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
     </div>
   );
 }
+
+    
