@@ -34,7 +34,6 @@ const navGroups = [
     links: [
       { href: '/compress-pdf', label: 'Compress PDF', icon: FileDown },
       { href: '/pdf-merger', label: 'Merge & Edit PDF', icon: Combine },
-      { href: '/protect-pdf', label: 'Protect PDF', icon: Lock },
     ]
   }
 ];

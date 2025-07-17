@@ -33,12 +33,6 @@ const tools = [
     href: '/pdf-merger',
     icon: Combine,
   },
-  {
-    title: 'Protect PDF',
-    description: 'Add a password to your PDF files to prevent unauthorized access.',
-    href: '/protect-pdf',
-    icon: Lock,
-  },
 ];
 
 export default function Home() {
