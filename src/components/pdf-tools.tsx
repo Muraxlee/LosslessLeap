@@ -3,26 +3,21 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImageToPdf from "@/components/image-to-pdf";
-import { FileImage, Combine, Scissors } from "lucide-react";
+import { FileImage, Combine } from "lucide-react";
 import PdfMerger from "./pdf-merger";
-import PdfEditor from "./pdf-editor";
 
 export default function PdfTools() {
   return (
     <Tabs defaultValue="image-to-pdf" className="w-full">
       <div className="flex justify-center">
-        <TabsList className="mb-6 grid w-full grid-cols-3 md:w-auto">
+        <TabsList className="mb-6 grid w-full grid-cols-2 md:w-auto">
           <TabsTrigger value="image-to-pdf">
             <FileImage className="mr-2" />
             Image to PDF
           </TabsTrigger>
           <TabsTrigger value="merge-pdf">
             <Combine className="mr-2" />
-            Merge PDF
-          </TabsTrigger>
-          <TabsTrigger value="edit-pdf">
-            <Scissors className="mr-2" />
-            Edit PDF
+            Merge & Edit PDF
           </TabsTrigger>
         </TabsList>
       </div>
@@ -31,9 +26,6 @@ export default function PdfTools() {
       </TabsContent>
       <TabsContent value="merge-pdf">
         <PdfMerger />
-      </TabsContent>
-      <TabsContent value="edit-pdf">
-        <PdfEditor />
       </TabsContent>
     </Tabs>
   );
