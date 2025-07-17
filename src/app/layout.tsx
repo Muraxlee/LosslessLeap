@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     images: [`${siteConfig.url}/og-image.png`], // Update with your actual OG image path
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: "/logo.svg",
   }
 };
 
