@@ -60,12 +60,12 @@ export default function ProtectPdf() {
     
     try {
         const existingPdfBytes = await pdfFile.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(existingPdfBytes);
+        const pdfDoc = await PDFDocument.load(existingPdfBytes, { ignoreEncryption: true });
 
         const protectedPdfBytes = await pdfDoc.save({ 
             encrypt: {
                 userPassword: password,
-                ownerPassword: password, // You can have a separate owner password if needed
+                ownerPassword: password,
             }
         });
 
@@ -76,7 +76,7 @@ export default function ProtectPdf() {
         const originalName = pdfFile.name.split('.').slice(0, -1).join('.') || 'protected';
         a.download = `${originalName}-protected.pdf`;
         document.body.appendChild(a);
-        a.click();
+a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
@@ -84,13 +84,16 @@ export default function ProtectPdf() {
             title: "PDF Protected Successfully",
             description: "Your download has started.",
         });
+        
+        // After success, reset to allow another file
+        handleReset();
 
     } catch (error) {
         console.error("PDF Protection Error:", error);
         toast({
             variant: "destructive",
             title: "Failed to Protect PDF",
-            description: "An unexpected error occurred during processing."
+            description: "The file might be corrupted or in an unsupported format."
         });
     } finally {
         setIsProcessing(false);
