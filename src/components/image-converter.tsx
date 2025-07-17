@@ -68,7 +68,6 @@ export default function ImageConverter() {
   const handleFileChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
-    // Clear previous queue before adding new files
     queueRef.current.forEach(item => URL.revokeObjectURL(item.originalPreview));
 
     const newItems: ImageQueueItem[] = [];
@@ -112,43 +111,47 @@ export default function ImageConverter() {
   }, [toast]);
   
   const convertImage = useCallback(async (item: ImageQueueItem, format: OutputFormat): Promise<Partial<ImageQueueItem>> => {
-    if (!item.originalFile || !item.imageDimensions) {
-      return { status: 'error', error: 'Missing file or dimensions.' };
+    if (!item.imageDimensions) {
+      return { status: 'error', error: 'Missing image dimensions.' };
     }
   
-    return new Promise((resolvePromise) => {
-        const img = new Image();
-        img.onload = async () => {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) throw new Error("Could not get canvas context");
-                ctx.drawImage(img, 0, 0);
-        
-                const mimeType = `image/${format}`;
-                const blob = await new Promise<Blob | null>((resolve) => {
-                    canvas.toBlob(resolve, mimeType, 1.0); // Use full quality for conversion
-                });
-        
-                if (blob) {
-                    resolvePromise({ convertedBlob: blob, convertedSize: blob.size, status: 'done' });
-                } else {
-                    resolvePromise({ status: 'error', error: 'Canvas toBlob failed.' });
-                }
-            } catch (error) {
-                resolvePromise({ status: 'error', error: 'Conversion failed.' });
-            } finally {
-                URL.revokeObjectURL(img.src);
-            }
-        };
-        img.onerror = () => {
-            resolvePromise({ status: 'error', error: 'Image load failed.' });
-            URL.revokeObjectURL(img.src);
-        };
-        img.src = item.originalPreview;
-    });
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = (err) => reject(new Error('Image could not be loaded for conversion.'));
+          image.src = item.originalPreview;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Could not get canvas context");
+
+      // For formats that don't support transparency (like JPEG), fill with white
+      if (format === 'jpeg') {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      ctx.drawImage(img, 0, 0);
+  
+      const mimeType = `image/${format}`;
+      const quality = format === 'jpeg' ? 0.92 : 1.0;
+
+      const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob(resolve, mimeType, quality);
+      });
+  
+      if (blob) {
+          return { convertedBlob: blob, convertedSize: blob.size, status: 'done' };
+      } else {
+          return { status: 'error', error: 'Canvas toBlob failed.' };
+      }
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return { status: 'error', error: errorMessage };
+    }
   }, []);
 
   const processQueue = useCallback(async () => {
@@ -177,7 +180,7 @@ export default function ImageConverter() {
   const handleFormatChange = (newFormat: OutputFormat) => {
     setOutputFormat(newFormat);
     if(imageQueue.length > 0){
-        setIsProcessingQueue(false); // Allow reprocessing
+        setIsProcessingQueue(false);
         setImageQueue(prev => prev.map(i => i.status === 'error' ? i : {
             ...i,
             status: 'queued',
