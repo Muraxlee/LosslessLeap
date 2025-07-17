@@ -4,19 +4,38 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, Lock } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, Lock, ChevronDown, Image as ImageIcon, File as FileIcon } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'LosslessLeap - Free & Private Image & PDF Tools',
   description: 'Compress, convert images, and edit PDFs for free without a server. Fast, private, and easy to use.',
 };
 
-const navLinks = [
-  { href: '/image-compressor', label: 'Compress Image', icon: Minimize },
-  { href: '/image-converter', label: 'Convert Image', icon: ArrowRightLeft },
-  { href: '/image-to-pdf', label: 'Image to PDF', icon: FileImage },
-  { href: '/pdf-merger', label: 'Merge & Edit PDF', icon: Combine },
-  { href: '/protect-pdf', label: 'Protect PDF', icon: Lock },
+const navGroups = [
+  {
+    title: 'Image Tools',
+    icon: ImageIcon,
+    links: [
+      { href: '/image-compressor', label: 'Compress Image', icon: Minimize },
+      { href: '/image-converter', label: 'Convert Image', icon: ArrowRightLeft },
+      { href: '/image-to-pdf', label: 'Image to PDF', icon: FileImage },
+    ]
+  },
+  {
+    title: 'PDF Tools',
+    icon: FileIcon,
+    links: [
+      { href: '/pdf-merger', label: 'Merge & Edit PDF', icon: Combine },
+      { href: '/protect-pdf', label: 'Protect PDF', icon: Lock },
+    ]
+  }
 ];
 
 const Logo = () => (
@@ -60,11 +79,25 @@ export default function RootLayout({
               <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
             </Link>
             
-            <nav className="hidden items-center gap-4 text-sm md:flex">
-              {navLinks.map(({ href, label }) => (
-                <Button key={href} variant="ghost" asChild>
-                  <Link href={href}>{label}</Link>
-                </Button>
+            <nav className="hidden items-center gap-2 text-sm md:flex">
+              {navGroups.map((group) => (
+                <DropdownMenu key={group.title}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost">
+                      {group.title} <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {group.links.map(({ href, label, icon: Icon }) => (
+                      <DropdownMenuItem key={href} asChild>
+                        <Link href={href}>
+                          <Icon className="mr-2 h-4 w-4" />
+                          {label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ))}
             </nav>
 
@@ -82,11 +115,27 @@ export default function RootLayout({
                       <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
                     </Link>
                   <nav className="flex flex-col gap-2">
-                    {navLinks.map(({ href, label, icon: Icon }) => (
-                      <Button key={href} variant="ghost" asChild className="justify-start">
-                        <Link href={href}><Icon className="mr-2 h-4 w-4"/>{label}</Link>
-                      </Button>
-                    ))}
+                    <Accordion type="multiple" className="w-full">
+                      {navGroups.map((group) => (
+                        <AccordionItem value={group.title} key={group.title}>
+                           <AccordionTrigger className="text-base font-medium py-3 hover:no-underline">
+                              <div className="flex items-center gap-3">
+                                <group.icon className="h-5 w-5 text-primary" />
+                                {group.title}
+                              </div>
+                            </AccordionTrigger>
+                           <AccordionContent className="pl-4">
+                              <div className="flex flex-col gap-1 mt-2">
+                                {group.links.map(({ href, label, icon: Icon }) => (
+                                  <Button key={href} variant="ghost" asChild className="justify-start">
+                                    <Link href={href}><Icon className="mr-2 h-4 w-4"/>{label}</Link>
+                                  </Button>
+                                ))}
+                              </div>
+                           </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
                   </nav>
                 </SheetContent>
               </Sheet>
