@@ -172,6 +172,7 @@ export default function ImageToPdf() {
                         onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
                         className={cn("w-full aspect-square border-2 border-dashed transition-colors flex items-center justify-center cursor-pointer", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
                     >
+                         <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="image/png, image/jpeg" multiple />
                          <div className="text-center text-muted-foreground">
                             <UploadCloud className="mx-auto h-10 w-10" />
                             <p className="mt-2 text-sm">Add more</p>
