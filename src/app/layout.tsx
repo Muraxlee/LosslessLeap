@@ -1,9 +1,10 @@
+
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,6 +112,7 @@ export default function RootLayout({
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left">
+                   <SheetTitle className="sr-only">Menu</SheetTitle>
                    <Link href="/" className="mr-6 flex items-center gap-3 mb-6">
                       <Logo />
                       <h1 className="text-xl font-semibold text-foreground">LosslessLeap</h1>
