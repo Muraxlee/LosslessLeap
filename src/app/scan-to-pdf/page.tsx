@@ -202,13 +202,12 @@ a.click();
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                             <div className="text-center md:text-left">
                                 <h3 className="text-xl font-semibold text-foreground">Connect your Phone</h3>
-                                <p className="text-muted-foreground mt-2 mb-6">
-                                    Scan the QR code with your mobile device to begin.
-                                    <br/>
+                                <div className="text-muted-foreground mt-2 mb-6">
+                                    <p>Scan the QR code with your mobile device to begin.</p>
                                     <Badge variant={connectionStatus === 'connected' ? "default": "secondary"} className={`mt-2 ${connectionStatus === 'connected' ? "bg-green-100 text-green-800" : ""}`}>
                                         {connectionStatus === 'connected' ? <><Wifi className="mr-2 h-4 w-4"/> Connected</> : <><WifiOff className="mr-2 h-4 w-4"/> {connectionStatus}</>}
                                     </Badge>
-                                </p>
+                                </div>
                                 <p className="text-xs text-muted-foreground">
                                     Your phone and computer must be on the same network.
                                     Do not close this browser tab.
