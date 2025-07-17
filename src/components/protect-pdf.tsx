@@ -9,10 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { PDFDocument } from 'pdf-lib';
 
 export default function ProtectPdf() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -21,6 +23,7 @@ export default function ProtectPdf() {
   const handleReset = useCallback(() => {
     setPdfFile(null);
     setPassword('');
+    setConfirmPassword('');
     setIsProcessing(false);
     if (inputRef.current) inputRef.current.value = "";
   }, []);
@@ -48,21 +51,50 @@ export default function ProtectPdf() {
         toast({ variant: "destructive", title: "Password is required." });
         return;
     }
+    if (password !== confirmPassword) {
+        toast({ variant: "destructive", title: "Passwords do not match." });
+        return;
+    }
     
     setIsProcessing(true);
     
-    // Placeholder for actual PDF protection logic
-    console.log(`Protecting PDF "${pdfFile.name}" with password "${password}"`);
-    
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    toast({
-        title: "Feature in development",
-        description: "The PDF protection logic is not yet implemented.",
-    });
+    try {
+        const existingPdfBytes = await pdfFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
-    setIsProcessing(false);
+        const protectedPdfBytes = await pdfDoc.save({ 
+            encrypt: {
+                userPassword: password,
+                ownerPassword: password, // You can have a separate owner password if needed
+            }
+        });
+
+        const blob = new Blob([protectedPdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const originalName = pdfFile.name.split('.').slice(0, -1).join('.') || 'protected';
+        a.download = `${originalName}-protected.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast({
+            title: "PDF Protected Successfully",
+            description: "Your download has started.",
+        });
+
+    } catch (error) {
+        console.error("PDF Protection Error:", error);
+        toast({
+            variant: "destructive",
+            title: "Failed to Protect PDF",
+            description: "An unexpected error occurred during processing."
+        });
+    } finally {
+        setIsProcessing(false);
+    }
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -108,6 +140,15 @@ export default function ProtectPdf() {
     );
   }
 
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes <= 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  };
+
   return (
     <div className="w-full max-w-md mx-auto">
         <Card>
@@ -118,7 +159,7 @@ export default function ProtectPdf() {
             <CardContent className="grid gap-6">
                 <div className="p-4 border rounded-md bg-muted/50">
                     <p className="font-medium truncate">{pdfFile.name}</p>
-                    <p className="text-sm text-muted-foreground">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-sm text-muted-foreground">{formatBytes(pdfFile.size)}</p>
                 </div>
 
                 <div className="grid gap-2">
@@ -138,18 +179,20 @@ export default function ProtectPdf() {
                         id="confirm-password" 
                         type="password"
                         placeholder="Confirm password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         disabled={isProcessing}
                     />
                 </div>
 
                 <div className="flex flex-col gap-3 pt-4">
-                    <Button onClick={handleProtectPdf} size="lg" disabled={isProcessing || !password}>
+                    <Button onClick={handleProtectPdf} size="lg" disabled={isProcessing || !password || password !== confirmPassword}>
                         {isProcessing ? (
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         ) : (
                             <Lock className="mr-2 h-5 w-5" />
                         )}
-                        {isProcessing ? "Protecting..." : "Protect PDF"}
+                        {isProcessing ? "Protecting..." : "Protect & Download PDF"}
                     </Button>
                     <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                         <X className="mr-2 h-5 w-5" />
