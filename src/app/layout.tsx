@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, Lock, ChevronDown, Image as ImageIcon, File as FileIcon, FileDown, ScanLine } from 'lucide-react';
+import AdSenseAd from '@/components/adsense-ad';
 
 export const metadata: Metadata = {
   title: 'LosslessLeap - Free & Private Image & PDF Tools',
@@ -82,8 +83,8 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-background">
         <div className="ad-container-left bg-background">
-          <div className="w-40 h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-            {/* Left Skyscraper Ad */}
+          <div className="w-40 h-full flex items-center justify-center">
+            <AdSenseAd slot="2414212592" />
           </div>
         </div>
         <div className="flex flex-col min-h-screen lg:mx-40">
@@ -165,7 +166,7 @@ export default function RootLayout({
           
           <footer className="py-6 container">
              <div className="ad-container-footer">
-              <span className="text-xs text-muted-foreground">Advertisement</span>
+               <AdSenseAd slot="2414212592" />
             </div>
             <p className="text-center text-sm text-muted-foreground mt-4">
               Your files stay on your device. Always.
@@ -175,8 +176,8 @@ export default function RootLayout({
           <Toaster />
         </div>
         <div className="ad-container-right bg-background">
-           <div className="w-40 h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-            {/* Right Skyscraper Ad */}
+           <div className="w-40 h-full flex items-center justify-center">
+             <AdSenseAd slot="2414212592" />
           </div>
         </div>
       </body>

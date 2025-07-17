@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import Link from 'next/link';
 import { ArrowRightLeft, Minimize, FileImage, Combine, Lock, FileDown, ScanLine } from 'lucide-react';
 import React from 'react';
+import AdSenseAd from '@/components/adsense-ad';
 
 const tools = [
   {
@@ -45,10 +46,8 @@ const tools = [
 
 const AdPlaceholder = () => (
   <div className="h-full">
-    <Card className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 p-6">
-      <div className="text-center">
-        <span className="text-xs text-muted-foreground">Advertisement</span>
-      </div>
+    <Card className="h-full flex items-center justify-center p-6">
+      <AdSenseAd slot="2414212592" />
     </Card>
   </div>
 );
