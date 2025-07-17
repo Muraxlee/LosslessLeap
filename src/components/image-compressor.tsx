@@ -62,6 +62,7 @@ export default function ImageCompressor() {
   }, []);
 
   useEffect(() => {
+    // This is a cleanup effect that runs when the component unmounts.
     return () => {
       queueRef.current.forEach(item => {
         if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
@@ -72,6 +73,7 @@ export default function ImageCompressor() {
   const handleFileChange = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
+    // Clear previous queue and revoke old URLs before adding new files
     handleReset();
     
     const newItems: ImageQueueItem[] = [];
@@ -153,14 +155,11 @@ export default function ImageCompressor() {
         } catch (error) {
             console.error("Image compression error:", error);
             resolvePromise({ status: 'error', error: 'Compression failed.' });
-        } finally {
-            URL.revokeObjectURL(img.src);
         }
       };
       img.onerror = () => {
         console.error("Image load failed for compression:", item.originalPreview);
         resolvePromise({ status: 'error', error: 'Image load failed.' });
-        URL.revokeObjectURL(img.src);
       };
       img.src = item.originalPreview;
     });
