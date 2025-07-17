@@ -3,12 +3,16 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import NextImage from 'next/image';
-import { UploadCloud, Loader2, Download, X, XCircle, FileImage } from 'lucide-react';
+import { UploadCloud, Loader2, Download, X, FileImage, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PageSizes, StandardFonts } from 'pdf-lib';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Separator } from '@/components/ui/separator';
 
 interface ImageQueueItem {
   id: string;
@@ -16,10 +20,23 @@ interface ImageQueueItem {
   preview: string;
 }
 
+const PAGE_SIZES = {
+  A4: PageSizes.A4,
+  A3: PageSizes.A3,
+  A5: PageSizes.A5,
+  Letter: PageSizes.Letter,
+  Legal: PageSizes.Legal,
+};
+
+type PageSize = keyof typeof PAGE_SIZES;
+
 export default function ImageToPdf() {
   const [imageQueue, setImageQueue] = useState<ImageQueueItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [pageSize, setPageSize] = useState<PageSize>('A4');
+  const [margin, setMargin] = useState(20);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const queueRef = useRef(imageQueue);
   queueRef.current = imageQueue;
@@ -48,7 +65,7 @@ export default function ImageToPdf() {
           toast({
             variant: "destructive",
             title: "Invalid file type",
-            description: `Only JPG and PNG images are supported for PDF conversion. Skipped: ${file.name}`,
+            description: `Only JPG and PNG images are supported. Skipped: ${file.name}`,
           });
           return false;
         }
@@ -64,43 +81,55 @@ export default function ImageToPdf() {
   }, [toast]);
   
   const removeItem = (id: string) => {
-    const itemToRemove = imageQueue.find(item => item.id === id);
-    if (itemToRemove) {
-        URL.revokeObjectURL(itemToRemove.preview);
-    }
-    setImageQueue(prev => prev.filter(item => item.id !== id));
+    setImageQueue(prev => {
+      const itemToRemove = prev.find(item => item.id === id);
+      if (itemToRemove) URL.revokeObjectURL(itemToRemove.preview);
+      return prev.filter(item => item.id !== id);
+    });
   };
 
   const createPdf = async () => {
     if (imageQueue.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "No images selected",
-        description: "Please add images to create a PDF.",
-      });
+      toast({ variant: "destructive", title: "No images added", description: "Please add one or more images." });
       return;
     }
     setIsProcessing(true);
     
     try {
       const pdfDoc = await PDFDocument.create();
+      const selectedPageSize = PAGE_SIZES[pageSize];
 
       for (const item of imageQueue) {
         const imageBytes = await item.file.arrayBuffer();
         let image;
         if (item.file.type === 'image/png') {
-            image = await pdfDoc.embedPng(imageBytes);
+          image = await pdfDoc.embedPng(imageBytes);
         } else {
-            image = await pdfDoc.embedJpg(imageBytes);
+          image = await pdfDoc.embedJpg(imageBytes);
         }
         
-        const page = pdfDoc.addPage([image.width, image.height]);
-        page.drawImage(image, {
-          x: 0,
-          y: 0,
-          width: image.width,
-          height: image.height,
-        });
+        const page = pdfDoc.addPage(selectedPageSize);
+        const { width: pageW, height: pageH } = page.getSize();
+        
+        const availableWidth = pageW - margin * 2;
+        const availableHeight = pageH - margin * 2;
+        
+        const imageAspectRatio = image.width / image.height;
+        const availableAspectRatio = availableWidth / availableHeight;
+
+        let finalWidth, finalHeight;
+        if (imageAspectRatio > availableAspectRatio) {
+            finalWidth = availableWidth;
+            finalHeight = finalWidth / imageAspectRatio;
+        } else {
+            finalHeight = availableHeight;
+            finalWidth = finalHeight * imageAspectRatio;
+        }
+
+        const xPos = (pageW - finalWidth) / 2;
+        const yPos = (pageH - finalHeight) / 2;
+
+        page.drawImage(image, { x: xPos, y: yPos, width: finalWidth, height: finalHeight });
       }
 
       const pdfBytes = await pdfDoc.save();
@@ -116,11 +145,7 @@ export default function ImageToPdf() {
 
     } catch (error) {
       console.error("PDF Creation Error:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to create PDF",
-        description: "An unexpected error occurred. Please try again.",
-      });
+      toast({ variant: "destructive", title: "Failed to create PDF", description: "An unexpected error occurred." });
     } finally {
       setIsProcessing(false);
     }
@@ -149,53 +174,91 @@ export default function ImageToPdf() {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><FileImage className="text-primary"/> Image to PDF Converter</CardTitle>
-                <CardDescription>Arrange images in the desired order and click "Create PDF" to combine them.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-                    {imageQueue.map(item => (
-                        <div key={item.id} className="relative group aspect-square">
-                            <NextImage src={item.preview} alt={item.file.name} fill className="object-cover rounded-md" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
-                                <Button size="icon" variant="destructive" onClick={() => removeItem(item.id)}>
-                                    <X className="h-5 w-5"/>
-                                </Button>
+    <div className="w-full max-w-7xl mx-auto">
+      <Card>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 p-6">
+            <div className="lg:col-span-2">
+                <CardHeader className="p-0 mb-4">
+                    <CardTitle className="flex items-center gap-2"><FileImage className="text-primary"/> Image Queue</CardTitle>
+                    <CardDescription>Arrange images and click "Create PDF".</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {imageQueue.map(item => (
+                            <div key={item.id} className="relative group aspect-square">
+                                <NextImage src={item.preview} alt={item.file.name} fill className="object-cover rounded-md" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
+                                    <Button size="icon" variant="destructive" onClick={() => removeItem(item.id)} aria-label="Remove image">
+                                        <X className="h-5 w-5"/>
+                                    </Button>
+                                </div>
                             </div>
+                        ))}
+                        <Card 
+                            onClick={onBrowseClick}
+                            onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
+                            className={cn("w-full aspect-square border-2 border-dashed transition-colors flex items-center justify-center cursor-pointer", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
+                        >
+                             <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="image/png, image/jpeg" multiple />
+                             <div className="text-center text-muted-foreground">
+                                <UploadCloud className="mx-auto h-10 w-10" />
+                                <p className="mt-2 text-sm">Add more</p>
+                             </div>
+                        </Card>
+                    </div>
+                </CardContent>
+            </div>
+          
+            <div>
+              <div className="sticky top-20">
+                <CardHeader className="p-0 mb-4">
+                    <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <div className="grid gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="page-size" className="text-base">Page Size</Label>
+                            <Select value={pageSize} onValueChange={(v) => setPageSize(v as PageSize)}>
+                              <SelectTrigger id="page-size" className="w-full">
+                                <SelectValue placeholder="Select size" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.keys(PAGE_SIZES).map(size => (
+                                  <SelectItem key={size} value={size}>{size}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                         </div>
-                    ))}
-                    <Card 
-                        onClick={onBrowseClick}
-                        onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
-                        className={cn("w-full aspect-square border-2 border-dashed transition-colors flex items-center justify-center cursor-pointer", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
-                    >
-                         <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="image/png, image/jpeg" multiple />
-                         <div className="text-center text-muted-foreground">
-                            <UploadCloud className="mx-auto h-10 w-10" />
-                            <p className="mt-2 text-sm">Add more</p>
-                         </div>
-                    </Card>
-                </div>
-                
-                <div className="flex justify-end gap-4">
-                    <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
-                        <X className="mr-2 h-5 w-5" />
-                        Clear All
-                    </Button>
-                    <Button onClick={createPdf} size="lg" disabled={isProcessing}>
-                        {isProcessing ? (
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        ) : (
-                            <Download className="mr-2 h-5 w-5"/>
-                        )}
-                        {isProcessing ? "Creating PDF..." : "Create PDF"}
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+                        <div className="space-y-2">
+                           <div className="flex items-center justify-between">
+                                <Label htmlFor="margin" className="text-base">Page Margin (px)</Label>
+                                <span className="w-16 rounded-md border px-2 py-1 text-center font-mono text-sm">{margin}</span>
+                            </div>
+                            <Slider id="margin" value={[margin]} min={0} max={100} step={5} onValueChange={([val]) => setMargin(val)} />
+                        </div>
+                    </div>
+                    
+                    <Separator className="my-6" />
+
+                    <div className="flex flex-col gap-3">
+                        <Button onClick={createPdf} size="lg" disabled={isProcessing}>
+                            {isProcessing ? (
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-5 w-5"/>
+                            )}
+                            {isProcessing ? "Creating PDF..." : "Create & Download PDF"}
+                        </Button>
+                        <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
+                            <X className="mr-2 h-5 w-5" />
+                            Clear All
+                        </Button>
+                    </div>
+                </CardContent>
+              </div>
+            </div>
+        </div>
+      </Card>
     </div>
   );
 }
