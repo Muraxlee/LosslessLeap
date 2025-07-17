@@ -13,6 +13,7 @@ import type { Peer, DataConnection } from 'peerjs';
 import QRCode from 'qrcode';
 import { Download, Loader2, Smartphone, Wifi, WifiOff, X, ScanLine, QrCode, Camera } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
+import AdSenseAd from '@/components/adsense-ad';
 
 interface ScannedImage {
     id: string;
@@ -212,6 +213,10 @@ a.click();
                             <p className="text-muted-foreground">{step.description}</p>
                             </div>
                         ))}
+                    </div>
+
+                    <div className="mb-8 h-24">
+                        <AdSenseAd slot="2414212592" />
                     </div>
 
                     <Card className="p-8">

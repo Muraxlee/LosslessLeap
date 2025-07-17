@@ -1,6 +1,7 @@
 
 import PdfMerger from '@/components/pdf-merger';
 import { UploadCloud, Combine, Download } from 'lucide-react';
+import AdSenseAd from '@/components/adsense-ad';
 
 const steps = [
   {
@@ -42,6 +43,11 @@ export default function PdfMergerPage() {
              </div>
           ))}
         </div>
+
+        <div className="mb-8 h-24">
+          <AdSenseAd slot="2414212592" />
+        </div>
+        
         <PdfMerger />
       </div>
     </div>

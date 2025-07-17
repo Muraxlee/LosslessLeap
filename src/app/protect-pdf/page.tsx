@@ -1,6 +1,7 @@
 
 import ProtectPdf from '@/components/protect-pdf';
 import { UploadCloud, Lock, Download } from 'lucide-react';
+import AdSenseAd from '@/components/adsense-ad';
 
 const steps = [
   {
@@ -43,6 +44,11 @@ export default function ProtectPdfPage() {
              </div>
           ))}
         </div>
+
+        <div className="mb-8 h-24">
+          <AdSenseAd slot="2414212592" />
+        </div>
+
         <ProtectPdf />
       </div>
     </div>

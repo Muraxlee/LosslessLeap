@@ -1,6 +1,7 @@
 
 import ImageToPdf from '@/components/image-to-pdf';
 import { UploadCloud, FileImage, Download } from 'lucide-react';
+import AdSenseAd from '@/components/adsense-ad';
 
 const steps = [
   {
@@ -42,6 +43,11 @@ export default function ImageToPdfPage() {
              </div>
           ))}
         </div>
+        
+        <div className="mb-8 h-24">
+          <AdSenseAd slot="2414212592" />
+        </div>
+
         <ImageToPdf />
       </div>
     </div>

@@ -2,6 +2,7 @@
 import PdfCompressor from '@/components/pdf-compressor';
 import { UploadCloud, Sparkles, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import AdSenseAd from '@/components/adsense-ad';
 
 const steps = [
   {
@@ -43,6 +44,10 @@ export default function CompressPdfPage() {
                <p className="text-muted-foreground">{step.description}</p>
              </div>
           ))}
+        </div>
+
+        <div className="mb-8 h-24">
+          <AdSenseAd slot="2414212592" />
         </div>
 
         <PdfCompressor />

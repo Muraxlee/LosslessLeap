@@ -1,6 +1,7 @@
 
 import ImageConverter from '@/components/image-converter';
 import { UploadCloud, ArrowRightLeft, Download } from 'lucide-react';
+import AdSenseAd from '@/components/adsense-ad';
 
 const steps = [
   {
@@ -43,6 +44,11 @@ export default function ImageConverterPage() {
              </div>
           ))}
         </div>
+
+        <div className="mb-8 h-24">
+          <AdSenseAd slot="2414212592" />
+        </div>
+
         <ImageConverter />
       </div>
     </div>
