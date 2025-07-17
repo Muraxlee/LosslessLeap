@@ -19,7 +19,15 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config) => {
+    // This is required by pdfjs-dist
     config.resolve.alias.canvas = false;
+    
+    // This is required by pdfjs-dist for the worker to be copied to the build output
+    config.module.rules.push({
+      test: /pdf\.worker\.min\.mjs/,
+      type: "asset/resource",
+    });
+
     return config;
   },
 };

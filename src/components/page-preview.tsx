@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
-import type { PDFDocumentProxy, PDFPageProxy, GlobalWorkerOptions as GlobalWorkerOptionsType } from 'pdfjs-dist';
-import type { getDocument as getDocumentType } from 'pdfjs-dist/types/src/display/api';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
+import type { getDocument as getDocumentType, GlobalWorkerOptions as GlobalWorkerOptionsType } from 'pdfjs-dist/types/src/display/api';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -17,44 +17,47 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // State to hold the dynamically imported pdfjs-dist functions
-  const [pdfjs, setPdfjs] = useState<{
-    getDocument: typeof getDocumentType;
-    GlobalWorkerOptions: typeof GlobalWorkerOptionsType;
+  const [pdfJs, setPdfJs] = useState<{
+      getDocument: typeof getDocumentType;
+      GlobalWorkerOptions: typeof GlobalWorkerOptionsType;
   } | null>(null);
 
   // Dynamically import the library on mount (client-side only)
   useEffect(() => {
-    const importPdfjs = async () => {
+    const importPdfJs = async () => {
       try {
         const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist');
-        GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
-        setPdfjs({ getDocument, GlobalWorkerOptions });
+        // This is a common pattern for Next.js to ensure the worker is loaded correctly.
+        GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url,
+        ).toString();
+        setPdfJs({ getDocument, GlobalWorkerOptions });
       } catch (e) {
         console.error("Failed to load pdfjs-dist", e);
         setError("Failed to load viewer.");
         setIsLoading(false);
       }
     };
-    importPdfjs();
+    importPdfJs();
   }, []);
+
 
   useEffect(() => {
     // Only proceed if the library is loaded and a file is present
-    if (!pdfjs || !file) return;
+    if (!pdfJs || !file) return;
 
     let isMounted = true;
+    let pdf: PDFDocumentProxy | null = null;
+    
     const renderPage = async () => {
       setIsLoading(true);
       setError(null);
-      let pdf: PDFDocumentProxy | null = null;
       try {
         const arrayBuffer = await file.arrayBuffer();
-        
-        // Ensure component is still mounted before proceeding
         if (!isMounted) return;
         
-        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+        const loadingTask = pdfJs.getDocument({ data: arrayBuffer, cMapUrl: `https://unpkg.com/pdfjs-dist@4.4.172/cmaps/`, cMapPacked: true });
         pdf = await loadingTask.promise;
 
         if (!isMounted) return;
@@ -64,7 +67,7 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const viewport = page.getViewport({ scale: 0.5 }); // Adjust scale for thumbnail quality
+        const viewport = page.getViewport({ scale: 0.5 }); // Adjust scale for thumbnail
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
@@ -83,8 +86,7 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
         if(isMounted) setError('Preview failed');
       } finally {
         if (pdf) {
-            // pdf.destroy() is a method on the loaded document proxy to clean up resources
-            (pdf as any).destroy?.();
+            pdf.destroy();
         }
         if(isMounted) setIsLoading(false);
       }
@@ -95,7 +97,7 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
     return () => {
       isMounted = false;
     };
-  }, [file, pageNumber, pdfjs]); // Rerun when pdfjs is loaded
+  }, [file, pageNumber, pdfJs]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-secondary rounded-md overflow-hidden">
