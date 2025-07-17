@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { PDFDocument, PageSizes, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PageSizes } from 'pdf-lib';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
@@ -28,13 +28,13 @@ const PAGE_SIZES = {
   Legal: PageSizes.Legal,
 };
 
-type PageSize = keyof typeof PAGE_SIZES;
+type PageSizeOption = keyof typeof PAGE_SIZES | 'Fit';
 
 export default function ImageToPdf() {
   const [imageQueue, setImageQueue] = useState<ImageQueueItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
-  const [pageSize, setPageSize] = useState<PageSize>('A4');
+  const [pageSize, setPageSize] = useState<PageSizeOption>('A4');
   const [margin, setMargin] = useState(20);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,7 +97,6 @@ export default function ImageToPdf() {
     
     try {
       const pdfDoc = await PDFDocument.create();
-      const selectedPageSize = PAGE_SIZES[pageSize];
 
       for (const item of imageQueue) {
         const imageBytes = await item.file.arrayBuffer();
@@ -108,28 +107,38 @@ export default function ImageToPdf() {
           image = await pdfDoc.embedJpg(imageBytes);
         }
         
-        const page = pdfDoc.addPage(selectedPageSize);
-        const { width: pageW, height: pageH } = page.getSize();
-        
-        const availableWidth = pageW - margin * 2;
-        const availableHeight = pageH - margin * 2;
-        
-        const imageAspectRatio = image.width / image.height;
-        const availableAspectRatio = availableWidth / availableHeight;
+        let page;
+        if (pageSize === 'Fit') {
+          const pageW = image.width + margin * 2;
+          const pageH = image.height + margin * 2;
+          page = pdfDoc.addPage([pageW, pageH]);
+          page.drawImage(image, { x: margin, y: margin, width: image.width, height: image.height });
 
-        let finalWidth, finalHeight;
-        if (imageAspectRatio > availableAspectRatio) {
-            finalWidth = availableWidth;
-            finalHeight = finalWidth / imageAspectRatio;
         } else {
-            finalHeight = availableHeight;
-            finalWidth = finalHeight * imageAspectRatio;
+          const selectedPageSize = PAGE_SIZES[pageSize];
+          page = pdfDoc.addPage(selectedPageSize);
+          const { width: pageW, height: pageH } = page.getSize();
+          
+          const availableWidth = pageW - margin * 2;
+          const availableHeight = pageH - margin * 2;
+          
+          const imageAspectRatio = image.width / image.height;
+          const availableAspectRatio = availableWidth / availableHeight;
+
+          let finalWidth, finalHeight;
+          if (imageAspectRatio > availableAspectRatio) {
+              finalWidth = availableWidth;
+              finalHeight = finalWidth / imageAspectRatio;
+          } else {
+              finalHeight = availableHeight;
+              finalWidth = finalHeight * imageAspectRatio;
+          }
+
+          const xPos = (pageW - finalWidth) / 2;
+          const yPos = (pageH - finalHeight) / 2;
+
+          page.drawImage(image, { x: xPos, y: yPos, width: finalWidth, height: finalHeight });
         }
-
-        const xPos = (pageW - finalWidth) / 2;
-        const yPos = (pageH - finalHeight) / 2;
-
-        page.drawImage(image, { x: xPos, y: yPos, width: finalWidth, height: finalHeight });
       }
 
       const pdfBytes = await pdfDoc.save();
@@ -218,11 +227,12 @@ export default function ImageToPdf() {
                     <div className="grid gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="page-size" className="text-base">Page Size</Label>
-                            <Select value={pageSize} onValueChange={(v) => setPageSize(v as PageSize)}>
+                            <Select value={pageSize} onValueChange={(v) => setPageSize(v as PageSizeOption)}>
                               <SelectTrigger id="page-size" className="w-full">
                                 <SelectValue placeholder="Select size" />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="Fit">Fit to Image</SelectItem>
                                 {Object.keys(PAGE_SIZES).map(size => (
                                   <SelectItem key={size} value={size}>{size}</SelectItem>
                                 ))}
