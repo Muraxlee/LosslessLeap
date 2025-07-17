@@ -85,10 +85,16 @@ export default function MobileScannerPage() {
           } catch (error) {
             console.error('Error accessing camera:', error);
             setHasCameraPermission(false);
+            toast({
+              variant: 'destructive',
+              title: 'Camera Access Denied',
+              description: 'Please enable camera permissions in your browser settings to use this feature.',
+            });
           }
         };
     
         getCameraPermission();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       }, []);
     
     const takePicture = useCallback(() => {
@@ -132,29 +138,27 @@ export default function MobileScannerPage() {
         }
     }
 
-    if(hasCameraPermission === false) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-                 <Alert variant="destructive">
-                      <Camera className="h-4 w-4" />
-                      <AlertTitle>Camera Access Required</AlertTitle>
-                      <AlertDescription>
-                        Please allow camera access in your browser settings to use the scanner.
-                      </AlertDescription>
-                </Alert>
-            </div>
-        )
-    }
-
     return (
         <div className="flex flex-col h-screen bg-black text-white">
             <header className="p-4 bg-zinc-900/80 backdrop-blur-sm text-center text-sm font-medium z-10 flex items-center justify-center gap-2">
                 {renderConnectionStatus()}
             </header>
             
-            <main className="flex-1 relative flex items-center justify-center">
+            <main className="flex-1 relative flex flex-col items-center justify-center bg-black">
                  <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                  <canvas ref={canvasRef} className="hidden" />
+
+                 {hasCameraPermission === false && (
+                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                        <Alert variant="destructive" className="max-w-sm">
+                            <Camera className="h-4 w-4" />
+                            <AlertTitle>Camera Access Required</AlertTitle>
+                            <AlertDescription>
+                                Please allow camera access in your browser settings to use the scanner.
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                )}
 
                  {lastImage && (
                     <div className="absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-20 p-4">
@@ -179,7 +183,7 @@ export default function MobileScannerPage() {
                 <Button 
                     className="w-20 h-20 rounded-full bg-white text-black hover:bg-gray-200 border-4 border-zinc-500 focus:border-primary"
                     onClick={takePicture}
-                    disabled={connectionStatus !== 'connected'}
+                    disabled={connectionStatus !== 'connected' || hasCameraPermission !== true}
                     aria-label="Take Picture"
                 >
                     <Camera className="h-8 w-8" />
@@ -188,4 +192,3 @@ export default function MobileScannerPage() {
         </div>
     );
 }
-
