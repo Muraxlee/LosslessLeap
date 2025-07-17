@@ -11,11 +11,6 @@ interface PagePreviewProps {
   pageNumber: number;
 }
 
-// Set workerSrc once when the module loads
-if (typeof window !== 'undefined') {
-  GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
-}
-
 const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,6 +18,13 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
 
   useEffect(() => {
     let isMounted = true;
+    
+    // Set workerSrc only on the client and inside useEffect
+    // This ensures it runs after the component has mounted in the browser.
+    if (typeof window !== 'undefined') {
+      GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+    }
+
     const renderPage = async () => {
       setIsLoading(true);
       setError(null);
@@ -33,7 +35,12 @@ const PagePreview: React.FC<PagePreviewProps> = ({ file, pageNumber }) => {
         const pdf = await loadingTask.promise;
 
         if (!isMounted) {
-          loadingTask.destroy();
+          // Check if the component is still mounted before proceeding
+          if (pdf) {
+            // pdf.destroy() is a method on the loaded document proxy to clean up resources
+            // It's good practice but check if it exists on the object first.
+            (pdf as any).destroy?.();
+          }
           return;
         }
 
