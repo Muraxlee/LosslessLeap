@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { UploadCloud, Loader2, Download, X, Sparkles, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ interface ProcessedFile {
 export default function PdfCompressor() {
   const [processedFile, setProcessedFile] = useState<ProcessedFile | null>(null);
   const [quality, setQuality] = useState(75); // Corresponds to 75%
+  const [estimatedSize, setEstimatedSize] = useState<number | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -37,6 +38,22 @@ export default function PdfCompressor() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
+
+  useEffect(() => {
+    if (processedFile && processedFile.status === 'idle') {
+      // Assume images are 80% of the file size for estimation.
+      const nonImageSize = processedFile.originalSize * 0.20;
+      const imageSize = processedFile.originalSize * 0.80;
+      
+      // Assume JPEG quality scale is roughly linear with size reduction for estimation.
+      const estimatedImageSize = imageSize * (quality / 100);
+      
+      setEstimatedSize(nonImageSize + estimatedImageSize);
+    } else {
+      setEstimatedSize(null);
+    }
+  }, [processedFile, quality]);
+
 
   const handleReset = useCallback(() => {
     setProcessedFile(null);
@@ -205,6 +222,7 @@ a.href = url;
                     <p className="text-sm text-muted-foreground">
                         {formatBytes(processedFile.originalSize)}
                         {processedFile.status === 'done' && ` → ${formatBytes(processedFile.compressedSize!)}`}
+                        {processedFile.status === 'idle' && estimatedSize && ` → Est. ${formatBytes(estimatedSize)}`}
                     </p>
                 </div>
                 
