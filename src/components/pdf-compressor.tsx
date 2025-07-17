@@ -1,17 +1,14 @@
 
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { UploadCloud, Loader2, Download, X, Sparkles, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { PDFDocument, PDFImage, PDFName } from 'pdf-lib';
 import imageCompression from 'browser-image-compression';
-import { Separator } from '@/components/ui/separator';
 
 interface ProcessedFile {
   originalFile: File;
@@ -24,8 +21,6 @@ interface ProcessedFile {
 
 export default function PdfCompressor() {
   const [processedFile, setProcessedFile] = useState<ProcessedFile | null>(null);
-  const [quality, setQuality] = useState(75); // Corresponds to 75%
-  const [estimatedSize, setEstimatedSize] = useState<number | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -38,22 +33,6 @@ export default function PdfCompressor() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
-
-  useEffect(() => {
-    if (processedFile && processedFile.status === 'idle') {
-      // Assume images are 80% of the file size for estimation.
-      const nonImageSize = processedFile.originalSize * 0.20;
-      const imageSize = processedFile.originalSize * 0.80;
-      
-      // Assume JPEG quality scale is roughly linear with size reduction for estimation.
-      const estimatedImageSize = imageSize * (quality / 100);
-      
-      setEstimatedSize(nonImageSize + estimatedImageSize);
-    } else {
-      setEstimatedSize(null);
-    }
-  }, [processedFile, quality]);
-
 
   const handleReset = useCallback(() => {
     setProcessedFile(null);
@@ -100,6 +79,8 @@ export default function PdfCompressor() {
     if (!processedFile) return;
 
     setProcessedFile(prev => prev ? { ...prev, status: 'compressing' } : null);
+    
+    const quality = 75; // Use a fixed quality
 
     try {
       const existingPdfBytes = await processedFile.originalFile.arrayBuffer();
@@ -167,7 +148,7 @@ export default function PdfCompressor() {
         description: "The file might be corrupted or in an unsupported format.",
       });
     }
-  }, [processedFile, quality, toast]);
+  }, [processedFile, toast]);
 
 
   const handleDownload = () => {
@@ -214,7 +195,7 @@ a.href = url;
         <Card>
             <CardHeader>
                 <CardTitle>Compress PDF</CardTitle>
-                <CardDescription>Adjust the quality and click compress.</CardDescription>
+                <CardDescription>Click compress to reduce your file size.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6">
                  <div className="p-4 border rounded-md bg-muted/50">
@@ -222,25 +203,9 @@ a.href = url;
                     <p className="text-sm text-muted-foreground">
                         {formatBytes(processedFile.originalSize)}
                         {processedFile.status === 'done' && ` → ${formatBytes(processedFile.compressedSize!)}`}
-                        {processedFile.status === 'idle' && estimatedSize && ` → Est. ${formatBytes(estimatedSize)}`}
                     </p>
                 </div>
                 
-                <div className="space-y-2">
-                   <div className="flex items-center justify-between">
-                        <Label htmlFor="quality" className="text-base">Image Quality</Label>
-                        <span className="w-16 rounded-md border px-2 py-1 text-center font-mono text-sm">{quality}</span>
-                    </div>
-                    <Slider 
-                        id="quality" 
-                        value={[quality]} 
-                        min={10} max={100} step={1} 
-                        onValueChange={([val]) => setQuality(val)}
-                        disabled={processedFile.status === 'compressing'}
-                    />
-                    <p className="text-sm text-muted-foreground">Lower quality means smaller file size. Affects images inside the PDF.</p>
-                </div>
-
                 {processedFile.status === 'done' && (
                    <div className="p-4 text-center bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                       <h3 className="text-lg font-semibold text-green-800 dark:text-green-300">Compression Complete!</h3>
