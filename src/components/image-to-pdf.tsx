@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, DragEvent as ReactDragEvent } from 'react';
 import NextImage from 'next/image';
 import { UploadCloud, Loader2, Download, X, FileImage, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -40,6 +40,9 @@ export default function ImageToPdf() {
   const inputRef = useRef<HTMLInputElement>(null);
   const queueRef = useRef(imageQueue);
   queueRef.current = imageQueue;
+  
+  const dragItemRef = useRef<number | null>(null);
+  const dragOverItemRef = useRef<number | null>(null);
 
   const { toast } = useToast();
 
@@ -163,6 +166,20 @@ export default function ImageToPdf() {
   const handleDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); if (e.type === "dragenter" || e.type === "dragover") setIsDragActive(true); else if (e.type === "dragleave") setIsDragActive(false); };
   const handleDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); if (e.dataTransfer.files) handleFileChange(e.dataTransfer.files); };
   const onBrowseClick = () => { inputRef.current?.click(); };
+  
+  const handleDragStart = (e: ReactDragEvent, index: number) => { dragItemRef.current = index; };
+  const handleDragEnter = (e: ReactDragEvent, index: number) => { dragOverItemRef.current = index; };
+  const handleDragEnd = () => {
+    if (dragItemRef.current !== null && dragOverItemRef.current !== null) {
+      const newQueue = [...imageQueue];
+      const dragItem = newQueue.splice(dragItemRef.current, 1)[0];
+      newQueue.splice(dragOverItemRef.current, 0, dragItem);
+      setImageQueue(newQueue);
+    }
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
+  };
+  const handleDragOver = (e: ReactDragEvent) => e.preventDefault();
 
   if (imageQueue.length === 0) {
     return (
@@ -189,17 +206,27 @@ export default function ImageToPdf() {
             <div className="lg:col-span-2">
                 <CardHeader className="p-0 mb-4">
                     <CardTitle className="flex items-center gap-2"><FileImage className="text-primary"/> Image Queue</CardTitle>
-                    <CardDescription>Arrange images and click "Create PDF".</CardDescription>
+                    <CardDescription>Drag to reorder images, then click "Create PDF".</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {imageQueue.map(item => (
-                            <div key={item.id} className="relative group aspect-square">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" onDragOver={handleDragOver}>
+                        {imageQueue.map((item, index) => (
+                            <div 
+                                key={item.id} 
+                                className="relative group aspect-square cursor-grab"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleDragEnd}
+                            >
                                 <NextImage src={item.preview} alt={item.file.name} fill className="object-cover rounded-md" />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
                                     <Button size="icon" variant="destructive" onClick={() => removeItem(item.id)} aria-label="Remove image">
                                         <X className="h-5 w-5"/>
                                     </Button>
+                                </div>
+                                <div className="absolute top-1 left-1 bg-black/50 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                                  {index + 1}
                                 </div>
                             </div>
                         ))}
@@ -272,3 +299,5 @@ export default function ImageToPdf() {
     </div>
   );
 }
+
+    
