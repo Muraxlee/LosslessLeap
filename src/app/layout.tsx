@@ -102,8 +102,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased bg-background">
-        <AdSenseAd slot="2414212592" className="ad-container-left bg-background" />
-        <div className="flex flex-col min-h-screen lg:mx-40">
+        <div className="flex flex-col min-h-screen">
           <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-16 items-center">
               <Link href="/" className="mr-6 flex items-center gap-3">
@@ -189,7 +188,6 @@ export default function RootLayout({
 
           <Toaster />
         </div>
-        <AdSenseAd slot="2414212592" className="ad-container-right bg-background" />
       </body>
     </html>
   );
