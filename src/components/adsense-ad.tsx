@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 declare global {
     interface Window {
@@ -14,13 +14,19 @@ interface AdSenseAdProps {
 }
 
 const AdSenseAd: React.FC<AdSenseAdProps> = ({ slot }) => {
+    const adRef = useRef<HTMLModElement>(null);
+
     useEffect(() => {
         try {
+            // Check if the ad has already been loaded
+            if (adRef.current && adRef.current.getAttribute('data-ad-status') === 'filled') {
+                return;
+            }
             (window.adsbygoogle = window.adsbygoogle || []).push({});
         } catch (err) {
-            console.error(err);
+            console.error('AdSense error:', err);
         }
-    }, []); // Empty dependency array ensures this runs only once on mount
+    }, [slot]); // Re-run if the slot changes, which is rare but good practice
 
     if (process.env.NODE_ENV !== 'production') {
         return (
@@ -32,6 +38,7 @@ const AdSenseAd: React.FC<AdSenseAdProps> = ({ slot }) => {
     
     return (
         <ins
+            ref={adRef}
             className="adsbygoogle"
             style={{ display: 'block' }}
             data-ad-client="ca-pub-3673219463234072"
