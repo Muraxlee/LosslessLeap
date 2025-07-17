@@ -65,9 +65,19 @@ export default function ScanToPdfPage() {
 
      useEffect(() => {
         let peerInstance: Peer | null = null;
+        let intervalId: NodeJS.Timeout | null = null;
         
         const initializePeer = async () => {
+            // Clean up previous peer instance if it exists
+            if (peerInstance) {
+                peerInstance.destroy();
+            }
+            if (connRef.current) {
+                connRef.current.close();
+            }
+
             try {
+                setIsLoadingQr(true);
                 const { default: Peer } = await import('peerjs');
                 const peerId = 'losslessleap-scan-desktop-' + Math.random().toString(36).substring(2, 9);
                 peerInstance = new Peer(peerId);
@@ -88,6 +98,8 @@ export default function ScanToPdfPage() {
                 });
 
                 peerInstance.on('connection', (conn) => {
+                    if (intervalId) clearInterval(intervalId); // Stop refreshing QR on connection
+                    
                     connRef.current = conn;
                     setConnectionStatus('connected');
                     toast({ title: 'Device Connected!', description: 'You can now start scanning documents on your mobile.' });
@@ -102,6 +114,7 @@ export default function ScanToPdfPage() {
                         setConnectionStatus('disconnected');
                         toast({ variant: 'destructive', title: 'Device Disconnected' });
                         connRef.current = null;
+                        initializePeer(); // Re-initialize to get a new QR code
                     });
                 });
 
@@ -118,8 +131,11 @@ export default function ScanToPdfPage() {
         };
         
         initializePeer();
+        // Refresh QR code every 2 minutes (120000 ms)
+        intervalId = setInterval(initializePeer, 120000);
 
         return () => {
+            if (intervalId) clearInterval(intervalId);
             connRef.current?.close();
             peerRef.current?.destroy();
         };
@@ -203,7 +219,7 @@ a.click();
                             <div className="text-center md:text-left">
                                 <h3 className="text-xl font-semibold text-foreground">Connect your Phone</h3>
                                 <div className="text-muted-foreground mt-2 mb-6">
-                                    <p>Scan the QR code with your mobile device to begin.</p>
+                                    <p>Scan the QR code with your mobile device to begin. The code refreshes every 2 minutes.</p>
                                     <Badge variant={connectionStatus === 'connected' ? "default": "secondary"} className={`mt-2 ${connectionStatus === 'connected' ? "bg-green-100 text-green-800" : ""}`}>
                                         {connectionStatus === 'connected' ? <><Wifi className="mr-2 h-4 w-4"/> Connected</> : <><WifiOff className="mr-2 h-4 w-4"/> {connectionStatus}</>}
                                     </Badge>
