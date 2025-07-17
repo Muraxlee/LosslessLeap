@@ -11,7 +11,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/compress-pdf',
     '/pdf-merger',
     '/scan-to-pdf',
-    '/protect-pdf',
   ];
 
   return routes.map((route) => ({

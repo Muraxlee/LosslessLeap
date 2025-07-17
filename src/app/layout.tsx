@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, Lock, ChevronDown, Image as ImageIcon, File as FileIcon, FileDown, ScanLine } from 'lucide-react';
+import { Menu, Minimize, ArrowRightLeft, FileImage, Combine, ChevronDown, Image as ImageIcon, File as FileIcon, FileDown, ScanLine } from 'lucide-react';
 import AdSenseAd from '@/components/adsense-ad';
 import Logo from '@/components/logo';
 
@@ -21,7 +21,7 @@ const siteConfig = {
   name: "LosslessLeap",
   url: "https://losslessleap.netlify.app",
   description: "Compress, convert images, and edit PDFs for free without a server. Fast, private, and easy to use.",
-  keywords: ["image compressor", "pdf compressor", "image converter", "pdf merger", "image to pdf", "scan to pdf", "protect pdf", "free tools", "privacy"],
+  keywords: ["image compressor", "pdf compressor", "image converter", "pdf merger", "image to pdf", "scan to pdf", "free tools", "privacy"],
 };
 
 export const metadata: Metadata = {
@@ -77,7 +77,6 @@ const navGroups = [
       { href: '/compress-pdf', label: 'Compress PDF', icon: FileDown },
       { href: '/pdf-merger', label: 'Merge & Edit PDF', icon: Combine },
       { href: '/scan-to-pdf', label: 'Scan to PDF', icon: ScanLine },
-      { href: '/protect-pdf', label: 'Protect PDF', icon: Lock },
     ]
   }
 ];

@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
-import { ArrowRightLeft, Minimize, FileImage, Combine, Lock, FileDown, ScanLine } from 'lucide-react';
+import { ArrowRightLeft, Minimize, FileImage, Combine, FileDown, ScanLine } from 'lucide-react';
 import React from 'react';
 import AdSenseAd from '@/components/adsense-ad';
 
@@ -35,12 +35,6 @@ const tools = [
     description: 'Combine multiple PDF files, and reorder or remove pages with ease.',
     href: '/pdf-merger',
     icon: Combine,
-  },
-   {
-    title: 'Protect PDF',
-    description: 'Add a password to your PDF to secure it from unauthorized access.',
-    href: '/protect-pdf',
-    icon: Lock,
   },
   {
     title: 'Scan to PDF',
