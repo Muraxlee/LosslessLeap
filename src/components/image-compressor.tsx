@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { UploadCloud, FileImage, Loader2, Download, X, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
+import { UploadCloud, Loader2, Download, X, Sparkles, CheckCircle2, XCircle, PackageCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -39,129 +39,155 @@ export default function ImageCompressor() {
   const { toast } = useToast();
 
   const formatBytes = (bytes: number, decimals = 2) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes <= 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
-
+  
   const handleReset = useCallback(() => {
-    // Revoke all object URLs
-    imageQueue.forEach(item => {
-      if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
-      if (item.compressedBlob) URL.revokeObjectURL(URL.createObjectURL(item.compressedBlob));
-    });
     setImageQueue([]);
     setIsProcessingQueue(false);
-    setQuality(75);
     if (inputRef.current) {
       inputRef.current.value = "";
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      imageQueue.forEach(item => {
+        if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
+        if (item.compressedBlob) URL.revokeObjectURL(URL.createObjectURL(item.compressedBlob));
+      });
+    };
   }, [imageQueue]);
 
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      handleReset();
-      const newItems: ImageQueueItem[] = [];
-      for (const file of Array.from(files)) {
-        if (file.type.startsWith('image/')) {
-          const id = `${file.name}-${file.lastModified}`;
-          const originalPreview = URL.createObjectURL(file);
-          const imageDimensions = await new Promise<ImageDimensions | null>((resolve) => {
-            const img = document.createElement('img');
-            img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-            img.onerror = () => resolve(null);
-            img.src = originalPreview;
-          });
+  const handleFileChange = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    handleReset();
+    const newItems: ImageQueueItem[] = [];
 
-          if (imageDimensions) {
-            newItems.push({
-              id,
-              originalFile: file,
-              originalPreview,
-              originalSize: file.size,
-              imageDimensions,
-              compressedBlob: null,
-              compressedSize: null,
-              status: 'queued',
-            });
-          } else {
-            URL.revokeObjectURL(originalPreview); // Clean up if dimension reading fails
-          }
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Invalid file type",
-            description: `Skipped non-image file: ${file.name}`,
-          });
-        }
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          variant: "destructive",
+          title: "Invalid file type",
+          description: `Skipped non-image file: ${file.name}`,
+        });
+        continue;
       }
-      setImageQueue(newItems);
-    }
-  }, [handleReset, toast]);
-
-  const compressImage = useCallback(async (item: ImageQueueItem, compressionQuality: number): Promise<Partial<ImageQueueItem>> => {
-      if (!item.originalFile || !item.imageDimensions) {
-        return { status: 'error', error: 'Missing file or dimensions.' };
-      }
-
-      const img = document.createElement('img');
-      const promise = new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = reject;
-      });
-      img.src = item.originalPreview;
-
+      
+      const id = `${file.name}-${file.lastModified}-${file.size}`;
+      const originalPreview = URL.createObjectURL(file);
+      
       try {
-          await promise;
+        const imageDimensions = await new Promise<ImageDimensions>((resolve, reject) => {
+          const img = document.createElement('img');
+          img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+          img.onerror = () => reject(new Error('Could not load image dimensions.'));
+          img.src = originalPreview;
+        });
 
-          const canvas = document.createElement('canvas');
-          canvas.width = item.imageDimensions.width;
-          canvas.height = item.imageDimensions.height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) throw new Error("Could not get canvas context");
-          ctx.drawImage(img, 0, 0, item.imageDimensions.width, item.imageDimensions.height);
-
-          const blob = await new Promise<Blob | null>((resolve) => {
-            canvas.toBlob(resolve, 'image/jpeg', compressionQuality / 100);
-          });
-          
-          if (blob) {
-            return {
-              compressedBlob: blob,
-              compressedSize: blob.size,
-              status: 'done'
-            };
-          } else {
-            return { status: 'error', error: 'Canvas toBlob failed.' };
-          }
+        newItems.push({
+          id,
+          originalFile: file,
+          originalPreview,
+          originalSize: file.size,
+          imageDimensions,
+          compressedBlob: null,
+          compressedSize: null,
+          status: 'queued',
+        });
       } catch (error) {
-          console.error("Image compression error:", error);
-          return { status: 'error', error: 'Compression failed.' };
+        toast({
+          variant: "destructive",
+          title: "Could not process file",
+          description: file.name,
+        });
+        URL.revokeObjectURL(originalPreview);
       }
+    }
+    setImageQueue(newItems);
+  }, [handleReset, toast]);
+  
+  const compressImage = useCallback(async (item: ImageQueueItem, compressionQuality: number): Promise<Partial<ImageQueueItem>> => {
+    if (!item.originalFile || !item.imageDimensions) {
+      return { status: 'error', error: 'Missing file or dimensions.' };
+    }
+  
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = document.createElement('img');
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = item.originalPreview;
+      });
+  
+      const canvas = document.createElement('canvas');
+      canvas.width = item.imageDimensions.width;
+      canvas.height = item.imageDimensions.height;
+      const ctx = canvas.getContext('2d');
+  
+      if (!ctx) throw new Error("Could not get canvas context");
+      ctx.drawImage(img, 0, 0);
+  
+      // Use WebP for better compression and transparency support. Fallback to Jpeg for other types.
+      const mimeType = 'image/webp';
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, mimeType, compressionQuality / 100);
+      });
+  
+      if (blob) {
+        return {
+          compressedBlob: blob,
+          compressedSize: blob.size,
+          status: 'done'
+        };
+      } else {
+        return { status: 'error', error: 'Canvas toBlob failed.' };
+      }
+    } catch (error) {
+        console.error("Image compression error:", error);
+        return { status: 'error', error: 'Compression failed.' };
+    }
   }, []);
 
   const processQueue = useCallback(async () => {
+    if (isProcessingQueue) return;
     setIsProcessingQueue(true);
-    for (const item of imageQueue) {
-      if(item.status !== 'queued') continue;
 
+    const queueToProcess = imageQueue.filter(item => item.status === 'queued');
+
+    for (const item of queueToProcess) {
       setImageQueue(prev => prev.map(i => i.id === item.id ? { ...i, status: 'compressing' } : i));
       const result = await compressImage(item, quality);
       setImageQueue(prev => prev.map(i => i.id === item.id ? { ...i, ...result } : i));
     }
-    setIsProcessingQueue(false);
-  }, [imageQueue, quality, compressImage]);
 
+    setIsProcessingQueue(false);
+  }, [imageQueue, quality, compressImage, isProcessingQueue]);
+  
   useEffect(() => {
-    if (imageQueue.length > 0 && imageQueue.some(i => i.status === 'queued')) {
-      const timer = setTimeout(() => processQueue(), 500);
+    const hasQueue = imageQueue.length > 0 && imageQueue.some(i => i.status === 'queued');
+    if (hasQueue) {
+      const timer = setTimeout(processQueue, 300);
       return () => clearTimeout(timer);
     }
-  }, [imageQueue, quality, processQueue]);
+  }, [imageQueue, processQueue]);
+
+  const handleQualityChange = (newQuality: number) => {
+    setQuality(newQuality);
+    setImageQueue(prev => prev.map(i => i.status === 'error' ? i : {
+        ...i,
+        status: 'queued',
+        compressedBlob: null,
+        compressedSize: null,
+        error: undefined,
+    }));
+  };
 
   const handleDownload = (item: ImageQueueItem) => {
     if (!item.compressedBlob) return;
@@ -169,28 +195,23 @@ export default function ImageCompressor() {
     const a = document.createElement('a');
     a.href = url;
     const originalName = item.originalFile.name.split('.').slice(0, -1).join('.') || 'compressed';
-    a.download = `${originalName}-compressed.jpg`;
+    a.download = `${originalName}-compressed.webp`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  
-  useEffect(() => {
-    // This effect ensures that object URLs are revoked when the component unmounts.
-    return () => {
-      imageQueue.forEach(item => {
-        if (item.originalPreview) URL.revokeObjectURL(item.originalPreview);
-        if (item.compressedBlob) {
-            const url = URL.createObjectURL(item.compressedBlob);
-            URL.revokeObjectURL(url);
-        }
-      });
-    }
-  }, [imageQueue]);
+
+  const handleDownloadAll = () => {
+    imageQueue.forEach(item => {
+      if (item.status === 'done') {
+        handleDownload(item);
+      }
+    });
+  };
 
   const handleDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); if (e.type === "dragenter" || e.type === "dragover") setIsDragActive(true); else if (e.type === "dragleave") setIsDragActive(false); };
-  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); if (e.dataTransfer.files && e.dataTransfer.files[0]) { handleFileChange({ target: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>); } };
+  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); if (e.dataTransfer.files) handleFileChange(e.dataTransfer.files); };
   const onBrowseClick = () => { inputRef.current?.click(); };
 
   if (imageQueue.length === 0) {
@@ -200,7 +221,7 @@ export default function ImageCompressor() {
         className={cn("w-full max-w-lg border-2 border-dashed transition-colors", isDragActive ? "border-primary bg-primary/10" : "hover:border-primary/50")}
       >
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-          <input ref={inputRef} type="file" onChange={handleFileChange} className="hidden" accept="image/png, image/jpeg, image/webp" multiple />
+          <input ref={inputRef} type="file" onChange={(e) => handleFileChange(e.target.files)} className="hidden" accept="image/png, image/jpeg, image/webp" multiple />
           <UploadCloud className="mx-auto h-16 w-16 text-muted-foreground" />
           <p className="mt-4 text-lg font-semibold text-foreground">Drag & drop your images here</p>
           <p className="mt-1 text-sm text-muted-foreground">or</p>
@@ -217,6 +238,7 @@ export default function ImageCompressor() {
   const totalCompressedSize = imageQueue.reduce((acc, item) => acc + (item.compressedSize ?? 0), 0);
   const totalReduction = totalOriginalSize > 0 ? ((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100 : 0;
   const allDone = imageQueue.every(i => i.status === 'done' || i.status === 'error');
+  const anyDone = imageQueue.some(i => i.status === 'done');
 
   return (
     <div className="w-full max-w-7xl">
@@ -225,16 +247,16 @@ export default function ImageCompressor() {
             <Card>
               <CardHeader>
                 <CardTitle>Image Queue</CardTitle>
-                <CardDescription>{imageQueue.length} image(s) ready for compression.</CardDescription>
+                <CardDescription>{imageQueue.length} image(s) in queue. { isProcessingQueue ? 'Compressing...' : (allDone ? 'Done!' : '') }</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col gap-4 max-h-[50vh] overflow-y-auto pr-2">
+                <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2">
                   {imageQueue.map(item => {
                     const reduction = item.originalSize && item.compressedSize ? ((item.originalSize - item.compressedSize) / item.originalSize) * 100 : 0;
                     return (
                     <div key={item.id} className="flex items-center gap-4 rounded-lg border p-3">
                       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                        <Image src={item.originalPreview} alt={item.originalFile.name} layout="fill" className="object-cover" />
+                        <Image src={item.originalPreview} alt={item.originalFile.name} fill className="object-cover" />
                       </div>
                       <div className="flex-grow overflow-hidden">
                         <p className="truncate font-medium text-foreground">{item.originalFile.name}</p>
@@ -243,15 +265,20 @@ export default function ImageCompressor() {
                           {item.compressedSize !== null && ` → ${formatBytes(item.compressedSize)}`}
                         </p>
                       </div>
-                      <div className="flex flex-shrink-0 items-center gap-4">
+                      <div className="flex w-32 flex-shrink-0 items-center justify-end gap-2">
                           {item.status === 'compressing' && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
                           {item.status === 'done' && (
                             <>
-                              <span className="text-sm font-medium text-green-600 dark:text-green-400">-{reduction.toFixed(1)}%</span>
-                              <Button size="sm" variant="ghost" onClick={() => handleDownload(item)}><Download className="h-5 w-5"/></Button>
+                              <span className="text-sm font-medium text-green-600 dark:text-green-400">-{reduction.toFixed(0)}%</span>
+                              <Button size="icon" variant="ghost" onClick={() => handleDownload(item)} aria-label="Download image"><Download className="h-5 w-5"/></Button>
                             </>
                           )}
-                          {item.status === 'error' && <XCircle className="h-6 w-6 text-destructive" />}
+                           {item.status === 'error' && (
+                            <div className="flex items-center gap-2 text-destructive">
+                                <XCircle className="h-6 w-6" />
+                                <span className="text-sm">Failed</span>
+                            </div>
+                           )}
                           {item.status === 'queued' && <span className="text-sm text-muted-foreground">Queued</span>}
                       </div>
                     </div>
@@ -276,11 +303,8 @@ export default function ImageCompressor() {
                         id="quality" 
                         value={[quality]} 
                         min={0} max={100} step={1} 
-                        onValueChange={(value) => setQuality(value[0])}
-                        onValueCommit={() => {
-                          // Re-process queue with new quality
-                          setImageQueue(prev => prev.map(i => ({...i, status: 'queued', compressedBlob: null, compressedSize: null, error: undefined})));
-                        }}
+                        onValueChange={([val]) => setQuality(val)}
+                        onValueCommit={([val]) => handleQualityChange(val)}
                         disabled={isProcessingQueue}
                       />
                   </div>
@@ -289,11 +313,14 @@ export default function ImageCompressor() {
                      <>
                       <Separator className="my-4" />
                       <div>
-                        <h3 className="font-medium">Total Savings</h3>
+                        <h3 className="text-lg font-semibold">Total Savings</h3>
                         <p className="text-sm text-muted-foreground">
-                          Compressed from {formatBytes(totalOriginalSize)} to {formatBytes(totalCompressedSize)}.
+                          Original: {formatBytes(totalOriginalSize)}
                         </p>
-                         <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                        <p className="text-sm text-muted-foreground">
+                          Compressed: {formatBytes(totalCompressedSize)}
+                        </p>
+                         <p className="text-xl font-bold text-green-600 dark:text-green-400">
                           Saved {totalReduction.toFixed(1)}%
                         </p>
                       </div>
@@ -302,10 +329,14 @@ export default function ImageCompressor() {
 
                   <Separator className="my-4" />
 
-                  <div className="flex flex-wrap justify-center gap-4">
+                  <div className="flex flex-col gap-3">
+                      <Button onClick={handleDownloadAll} size="lg" disabled={!anyDone || isProcessingQueue}>
+                          <PackageCheck />
+                          Download All
+                      </Button>
                       <Button onClick={handleReset} variant="outline" size="lg">
                           <X className="mr-2 h-5 w-5" />
-                          Clear Queue
+                          Clear & Start Over
                       </Button>
                   </div>
               </CardContent>
@@ -316,4 +347,4 @@ export default function ImageCompressor() {
   );
 }
 
-    
+  
